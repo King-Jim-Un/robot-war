@@ -1,11 +1,14 @@
 import logging
 from dataclasses import dataclass, field
-from typing import List, Any, Dict
+from pathlib import Path
+from typing import List, Any, Dict, Optional
 
-from robot_war.user_functions import CodeBlock, ReturnException, Function
+from robot_war.instructions.flow_control import ReturnException
+from robot_war.source_functions import CodeDict, Function
+from robot_war.source_module import Module
 
 # Types:
-NameDict = Dict[int, Any]
+NameDict = Dict[str, Any]
 
 # Constants:
 LOG = logging.getLogger(__name__)
@@ -13,72 +16,52 @@ CODE_STEP = 2
 
 
 @dataclass
-class SandBox:
-    name_dict_by_module_name: Dict[str, NameDict] = field(default_factory=dict)
+class FunctionContext:
+    function: Function
+    fast_stack: Dict[int, Any] = field(default_factory=dict)
+    data_stack: List[Any] = field(default_factory=list)
+    pc: int = 0
 
 
 @dataclass
-class CodeBlockContext:
-    sandbox: SandBox
-    code_block: CodeBlock
-    exec_context: "ExecContext"
-    data_stack: List[Any] = field(default_factory=list)
-    fast_stack: Dict[int, Any] = field(default_factory=dict)
-    pc: int = 0
+class SandBox:
+    root_path: Path
+    all_modules: Dict[str, Module] = field(default_factory=dict)
+    code_blocks_by_name: CodeDict = field(default_factory=dict)
+    call_stack: List[FunctionContext] = field(default_factory=list)
+    api: Optional[Module] = None
 
-    def step(self):
-        instruction = self.code_block.code_lines[self.pc]
-        instruction.exec(self, self.code_block)
-
-    def next(self):
-        self.pc += CODE_STEP
-
-    def peek(self, offset: int):
-        return self.data_stack[offset]
-
-    def pop(self):
-        return self.data_stack.pop()
-
-    def push(self, value):
-        return self.data_stack.append(value)
-
-
-class ExecContext:
-    sandbox: SandBox
-    call_stack: List[CodeBlockContext]
-
-    def __init__(self, sandbox: SandBox, code_block):
-        self.sandbox = sandbox
-        self.call_stack = [CodeBlockContext(sandbox, code_block, self)]
+    @property
+    def context(self) -> FunctionContext:
+        return self.call_stack[-1]
 
     def call_function(self, function, *args, **kwargs):
         if isinstance(function, Function):
-            assert not kwargs
-            code_block = function.code_block
-            name_dict: NameDict
-            if code_block.module.name in self.sandbox.name_dict_by_module_name:
-                name_dict = self.sandbox.name_dict_by_module_name[code_block.module.name]
-            else:
-                name_dict = {}
-                self.sandbox.name_dict_by_module_name[code_block.module.name] = name_dict
-            name_to_index_dict = code_block.init_name_to_index_dict(name_dict)
-            if "__annotations__" in name_to_index_dict:
-                name_dict[name_to_index_dict["__annotations__"]] = {}
-            context = CodeBlockContext(self.sandbox, code_block, self)
-            context.fast_stack = args
-            self.call_stack.append(context)
+            assert not kwargs, "TODO: kwargs"
+            fast_stack = {index: value for index, value in enumerate(args + function.closure)}
+            self.call_stack.append(FunctionContext(function, fast_stack))
         else:
-            self.call_stack[-1].push(function(*args, **kwargs))
-
-
-
+            self.push(function(*args, **kwargs))
 
     def step(self):
         try:
-            self.call_stack[-1].step()
+            context = self.context
+            context.function.code_block.code_lines[context.pc].exec(self)
         except ReturnException as rc:
             logging.debug("stack depth = %d", len(self.call_stack.pop().data_stack))
             if self.call_stack:
-                self.call_stack[-1].push(rc.value)
+                self.push(rc.value)
             else:
                 raise
+
+    def next(self):
+        self.context.pc += CODE_STEP
+
+    def peek(self, offset: int):
+        return self.context.data_stack[offset]
+
+    def pop(self):
+        return self.context.data_stack.pop()
+
+    def push(self, value):
+        return self.context.data_stack.append(value)

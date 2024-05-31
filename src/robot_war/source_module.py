@@ -1,19 +1,16 @@
-from typing import Dict, Any
+from dataclasses import dataclass, field
+import logging
 
-from robot_war.user_functions import CodeDict
+from robot_war.exec_context import NameDict
+from robot_war.source_functions import Function
+
+# Constants:
+LOG = logging.getLogger(__name__)
 
 
-class Module:
-    # Class members:
-    all_modules: Dict[str, "Module"] = {}
-
-    # Instance members:
-    name: str
-    code_blocks_by_name: CodeDict
-
-    def __init__(self, name: str):
-        self.name = name
-        self.code_blocks_by_name = {}
+@dataclass(repr=False)
+class Module(Function):
+    name_dict: NameDict = field(default_factory=dict)
 
     def __repr__(self):
-        return f"Module({self.name}, {len(self.code_blocks_by_name)} code blocks)"
+        return f"Module({self.name}, {len(self.name_dict)} names)"
