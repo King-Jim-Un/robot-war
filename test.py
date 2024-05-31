@@ -1,17 +1,13 @@
 import logging
+from pathlib import Path
 
-from robot_war.exec_context import ExecContext, SandBox
-from robot_war.parse_source_file import parse_source_file, IMMEDIATE
+from robot_war.run_program import run_program, exec_through
 
 # Constants:
 LOG = logging.getLogger(__name__)
-PATH = r"C:\git\robot-war\test-script.py"
+PATH = Path(__file__).parent / "test-script.py"
 
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
-    sandbox = SandBox()
-    module = parse_source_file(sandbox, "__main__", PATH)
-    context = ExecContext(sandbox, module.code_blocks_by_name[IMMEDIATE])
-    while True:
-        context.step()
+    exec_through(run_program(PATH))

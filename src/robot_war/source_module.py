@@ -1,8 +1,12 @@
 from dataclasses import dataclass, field
 import logging
 
-from robot_war.exec_context import NameDict
 from robot_war.source_functions import Function
+
+try:
+    from robot_war.exec_context import NameDict
+except ImportError:
+    NameDict = None
 
 # Constants:
 LOG = logging.getLogger(__name__)

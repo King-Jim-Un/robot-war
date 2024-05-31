@@ -19,6 +19,7 @@ CODE_STEP = 2
 class FunctionContext:
     function: Function
     fast_stack: Dict[int, Any] = field(default_factory=dict)
+    name_dict: NameDict = field(default_factory=dict)
     data_stack: List[Any] = field(default_factory=list)
     pc: int = 0
 
@@ -38,17 +39,23 @@ class SandBox:
     def call_function(self, function, *args, **kwargs):
         if isinstance(function, Function):
             assert not kwargs, "TODO: kwargs"
+            function.num_params = len(args)
+            LOG.warning("%r %r", args, function.closure)
             fast_stack = {index: value for index, value in enumerate(args + function.closure)}
-            self.call_stack.append(FunctionContext(function, fast_stack))
+            module = function.code_block.module
+            name_dict = module.name_dict if module else {}  # TODO: when running a member function, we need to use the class's name_dict
+            self.call_stack.append(FunctionContext(function, fast_stack, name_dict))
         else:
             self.push(function(*args, **kwargs))
 
     def step(self):
         try:
             context = self.context
-            context.function.code_block.code_lines[context.pc].exec(self)
+            instruction = context.function.code_block.code_lines[context.pc]
+            instruction.exec(self)
+            # context.function.code_block.code_lines[context.pc].exec(self)
         except ReturnException as rc:
-            logging.debug("stack depth = %d", len(self.call_stack.pop().data_stack))
+            assert not self.call_stack.pop().data_stack, "Data stack wasn't empty"
             if self.call_stack:
                 self.push(rc.value)
             else:

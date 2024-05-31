@@ -11,6 +11,22 @@ except ImportError:
 LOG = logging.getLogger(__name__)
 
 
+class BinaryAdd(CodeLine):
+    def exec(self, sandbox: SandBox):
+        arg2 = sandbox.pop()
+        arg1 = sandbox.pop()
+        sandbox.push(arg1 + arg2)
+        super().exec(sandbox)
+
+
+class BinaryMultiply(CodeLine):
+    def exec(self, sandbox: SandBox):
+        arg2 = sandbox.pop()
+        arg1 = sandbox.pop()
+        sandbox.push(arg1 * arg2)
+        super().exec(sandbox)
+
+
 class BuildConstKeyMap(CodeLine):
     def exec(self, sandbox: SandBox):
         sandbox.push({key: sandbox.pop() for key in reversed(sandbox.pop())})
@@ -21,15 +37,17 @@ class BuildConstKeyMap(CodeLine):
 class BuildList(CodeLine):
     def exec(self, sandbox: SandBox):
         data_stack = sandbox.context.data_stack
-        data_stack, values = data_stack[:-self.operand], data_stack[-self.operand:]
+        sandbox.context.data_stack, values = data_stack[:-self.operand], data_stack[-self.operand:]
         sandbox.push(values)
+        super().exec(sandbox)
 
 
 class BuildTuple(CodeLine):
     def exec(self, sandbox: SandBox):
         data_stack = sandbox.context.data_stack
-        data_stack, values = data_stack[:-self.operand], data_stack[-self.operand:]
+        sandbox.context.data_stack, values = data_stack[:-self.operand], data_stack[-self.operand:]
         sandbox.push(tuple(values))
+        super().exec(sandbox)
 
 
 class CompareOp(CodeLine):
@@ -38,6 +56,16 @@ class CompareOp(CodeLine):
         arg1 = sandbox.pop()
         sandbox.push(eval(f"{repr(arg1)} {self.note} {repr(arg2)}"))
         super().exec(sandbox)
+
+
+class LoadClosure(CodeLine):
+    def exec(self, sandbox: SandBox):
+        super().exec(sandbox)
+        sandbox.push(sandbox.context.fast_stack[sandbox.context.function.num_params + self.operand])
+
+
+class LoadDeref(LoadClosure):
+    pass
 
 
 class LoadConst(CodeLine):
@@ -64,6 +92,13 @@ class LoadFast(CodeLine):
         super().exec(sandbox)
 
 
+class LoadGlobal(CodeLine):
+    def exec(self, sandbox: SandBox):
+        super().exec(sandbox)
+        name_dict = sandbox.context.function.code_block.module.name_dict
+        sandbox.push(name_dict[self.note])
+
+
 class LoadSubscript(CodeLine):
     def exec(self, sandbox: SandBox):
         key = sandbox.pop()
@@ -78,9 +113,21 @@ class PopTop(CodeLine):
         super().exec(sandbox)
 
 
+class StoreFast(CodeLine):
+    def exec(self, sandbox: SandBox):
+        sandbox.context.fast_stack[self.operand] = sandbox.pop()
+        super().exec(sandbox)
+
+
 class StoreSubscript(CodeLine):
     def exec(self, sandbox: SandBox):
         index = sandbox.pop()
         obj = sandbox.pop()
         obj[index] = sandbox.pop()
+        super().exec(sandbox)
+
+
+class StoreDeref(CodeLine):
+    def exec(self, sandbox: SandBox):
+        sandbox.context.fast_stack[sandbox.context.function.num_params + self.operand] = sandbox.pop()
         super().exec(sandbox)

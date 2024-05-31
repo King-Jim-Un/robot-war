@@ -84,6 +84,7 @@ class LoadModuleFile1(CodeLine):  # Not in parser
         Load a module_name as module(N) from file_path
         push TOS: [module(0), module(1), ... module(N)]
         """
+        super().exec(sandbox)
         from robot_war.source_module import Module
         module_name, file_path = sandbox.pop()
         module_list: List[Module] = sandbox.pop()

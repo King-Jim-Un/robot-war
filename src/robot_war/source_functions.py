@@ -6,9 +6,8 @@ from robot_war.instructions import CodeLine
 
 try:
     from robot_war.source_module import Module
-    from robot_war.exec_context import SandBox
 except ImportError:
-    Module = CodeBlockContext = NameDict = SandBox = None
+    Module = None
 
 # Types:
 CodeDict = Dict[str, "CodeBlock"]
@@ -20,7 +19,7 @@ LOG = logging.getLogger(__name__)
 @dataclass(repr=False)
 class CodeBlock:
     code_lines: Dict[int, CodeLine] = field(default_factory=dict)
-    module: Optional["Module"] = None
+    module: Optional[Module] = None
     constants: Dict[int, Any] = field(default_factory=dict)
 
     def __repr__(self):

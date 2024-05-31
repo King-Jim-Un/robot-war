@@ -4,6 +4,7 @@ from robot_war.instructions import CodeLine
 
 try:
     from robot_war.exec_context import SandBox
+    from robot_war.source_functions import Function
 except ImportError:
     SandBox = None
 
@@ -39,13 +40,15 @@ class LoadMethod(CodeLine):
 class LoadName(CodeLine):
     def exec(self, sandbox: SandBox):
         super().exec(sandbox)
-        name_dict = sandbox.name_dict_by_module_name[sandbox.module.name]
-        sandbox.push(name_dict[self.note])
+        sandbox.push(sandbox.context.name_dict[self.note])
 
 
 class MakeFunction(CodeLine):
     def exec(self, sandbox: SandBox):
         super().exec(sandbox)
+        name = sandbox.pop()
+        code_block = sandbox.pop()
+        function = Function(name, code_block)
         if self.operand & 0x01:
             LOG.error("TODO: Handle default values")
             sandbox.pop()
@@ -56,10 +59,8 @@ class MakeFunction(CodeLine):
             # Ignore annotations
             sandbox.pop()
         if self.operand & 0x08:
-            sandbox.context.function.closure = sandbox.pop()
-        name = sandbox.pop()
-        code_block = sandbox.pop()
-        sandbox.push(Function(name, code_block))
+            function.closure = sandbox.pop()
+        sandbox.push(function)
 
 
 class SetupAnnotations(CodeLine):
@@ -76,6 +77,5 @@ class StoreAttr(CodeLine):
 
 class StoreName(CodeLine):
     def exec(self, sandbox: SandBox):
-        name_dict = sandbox.sandbox.name_dict_by_module_name[sandbox.module.name]
-        name_dict[self.note] = sandbox.pop()
+        sandbox.context.name_dict[self.note] = sandbox.pop()
         super().exec(sandbox)

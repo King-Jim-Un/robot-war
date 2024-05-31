@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from robot_war.built_ins import BUILT_INS
 from robot_war.exceptions import RobotWarSystemExit
 from robot_war.exec_context import SandBox
 from robot_war.instructions.imports import LoadModuleFile1
@@ -23,7 +24,7 @@ def run_program(source_file: Path) -> SandBox:
         16: CallFunction(None, 16, "CALL_FUNCTION", 1, None),  # Create exception
         18: RaiseVarArgs(None, 18, "RAISE_VARARGS", 1, None)  # Raise exception
     })
-    code_block.module = Module("__main_launcher__", code_block)
+    code_block.module = Module("__main_launcher__", code_block, name_dict=dict(BUILT_INS))
     sandbox = SandBox(source_file.parent)
     sandbox.call_function(Function("__run_program__", code_block, 1), source_file)  # DO NOT SAVE FUNCTION IN NAMES
     return sandbox
