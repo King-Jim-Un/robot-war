@@ -7,7 +7,7 @@ from robot_war.built_ins import BUILT_INS
 from robot_war.instructions.classes import LoadName
 from robot_war.instructions.data import LoadFast, PopTop
 from robot_war.instructions.flow_control import ReturnException, CallFunction, ReturnValue
-from robot_war.source_class import SourceClass, SourceInstance, Constructor
+from robot_war.source_class import SourceClass, SourceInstance, Constructor, BoundMethod
 from robot_war.source_functions import CodeDict, Function, CodeBlock
 from robot_war.source_module import Module
 
@@ -74,8 +74,7 @@ class SandBox:
             # and instance, but the __init__ function expects the instance in addition to the regular arguments!
 
             # Also note that the constructor function packages up the instance's name_dict.
-            constructor = Constructor(**function.function.__dict__)
-            constructor.name_dict = instance.name_dict
+            constructor = Constructor(name_dict = instance.name_dict, **function.function.__dict__)
             fast_stack = self.args_to_fast(function.function, constructor, instance, *args, **kwargs)
             num_args = len(fast_stack) - 1
 
@@ -113,6 +112,10 @@ class SandBox:
         elif isinstance(function, Constructor):
             fast_stack = self.args_to_fast(function, *args, **kwargs)
             self.call_stack.append(FunctionContext(function, fast_stack, function.name_dict))
+
+        elif isinstance(function, BoundMethod):
+            fast_stack = self.args_to_fast(function, function.instance, *args, **kwargs)
+            self.call_stack.append(FunctionContext(function, fast_stack, function.instance.name_dict))
 
         elif isinstance(function, Function):
             fast_stack = self.args_to_fast(function, *args, **kwargs)

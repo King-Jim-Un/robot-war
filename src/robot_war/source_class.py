@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field, asdict
 import logging
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 from robot_war.source_functions import Function
 
@@ -49,7 +49,16 @@ class SourceInstance:
         self.values[name] = value
 
     def get_attr(self, name: str):
-        return self.values[name]
+        if name in self.values:
+            return self.values[name]
+        else:
+            obj = self.name_dict[name]
+            return BoundMethod(instance=self, **obj.__dict__)if isinstance(obj, Function) else obj
 
     def get_method(self, name: str):
         return self.name_dict[name]
+
+
+@dataclass
+class BoundMethod(Function):
+    instance: Optional[SourceInstance] = None

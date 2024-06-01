@@ -87,8 +87,8 @@ class LoadConst(CodeLine):
 
 class LoadFast(CodeLine):
     def exec(self, sandbox: SandBox):
-        sandbox.push(sandbox.context.fast_stack[self.operand])
         super().exec(sandbox)
+        sandbox.push(sandbox.context.fast_stack[self.operand])
 
 
 class LoadGlobal(CodeLine):
