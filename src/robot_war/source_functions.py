@@ -25,7 +25,8 @@ class CodeBlock:
     constants: Dict[int, Any] = field(default_factory=dict)
 
     def __repr__(self):
-        return f"CodeBlock(module={self.module.name}, {len(self.code_lines)} lines, {len(self.constants)} constants)"
+        module_name = None if self.module is None else self.module.name
+        return f"CodeBlock(module={module_name}, {len(self.code_lines)} lines, {len(self.constants)} constants)"
 
 
 @dataclass

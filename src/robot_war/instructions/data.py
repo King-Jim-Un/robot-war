@@ -30,7 +30,6 @@ class BinaryMultiply(CodeLine):
 class BuildConstKeyMap(CodeLine):
     def exec(self, sandbox: SandBox):
         sandbox.push({key: sandbox.pop() for key in reversed(sandbox.pop())})
-        print(sandbox.peek(-1))
         super().exec(sandbox)
 
 
@@ -70,6 +69,7 @@ class LoadDeref(LoadClosure):
 
 class LoadConst(CodeLine):
     def exec(self, sandbox: SandBox):
+        super().exec(sandbox)
         constants = sandbox.context.function.code_block.constants
 
         # We don't preprocess the constants, just deal with them the first time they pop up. Have we done this one yet?
@@ -83,7 +83,6 @@ class LoadConst(CodeLine):
                 constants[self.operand] = eval(self.note)
 
         sandbox.push(constants[self.operand])
-        super().exec(sandbox)
 
 
 class LoadFast(CodeLine):

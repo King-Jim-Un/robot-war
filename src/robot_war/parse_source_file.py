@@ -4,6 +4,7 @@ from dis import get_instructions, code_info
 import logging
 from pathlib import Path
 import re
+from typing import Optional, Tuple
 
 from robot_war.built_ins import BUILT_INS
 from robot_war.source_functions import CodeBlock
@@ -54,14 +55,21 @@ OpCodeClasses = {
 }
 
 
-def code_to_codeblock(code: CodeClass) -> CodeBlock:
+def code_to_codeblock(code: CodeClass, sandbox: SandBox, module_name: str,
+                      module: Optional[Module] = None) -> CodeBlock:
     code_block = CodeBlock()
+    sandbox.code_blocks_by_name[str(code)] = code_block
+    if module is None:
+        module = Module(module_name, code_block, name_dict=dict(BUILT_INS))
+        module.name_dict["__name__"] = module_name
+        sandbox.all_modules[module_name] = module
+    code_block.module = module
 
     # Add instructions
-    for instruction in get_instructions(code):
-        line_class = OpCodeClasses[instruction.opname]
-        code_block.code_lines[instruction.offset] = line_class(instruction.starts_line, instruction.offset,
-                                                               instruction.opname, instruction.arg, instruction.argrepr)
+    for instr in get_instructions(code):
+        line_class = OpCodeClasses[instr.opname]
+        instr_obj = line_class(instr.starts_line, instr.offset, instr.opname, instr.arg, instr.argrepr)
+        code_block.code_lines[instr.offset] = instr_obj
 
     # Number of arguments
     info_str = code_info(code)
@@ -79,6 +87,11 @@ def code_to_codeblock(code: CodeClass) -> CodeBlock:
         var_name_dict = {int(index): name for index, name in SearchVarNames3.findall(var_name_str)}
         code_block.param_names = [var_name_dict[index] for index in range(code_block.num_params)]
 
+    # Grab other code blocks
+    for constant in code.co_consts:
+        if isinstance(constant, CodeClass):
+            code_to_codeblock(constant, sandbox, module_name, module)
+
     return code_block
 
 
@@ -87,19 +100,10 @@ def parse_source_file(sandbox: SandBox, module_name: str, file_path: Path) -> Co
     with file_path.open("rt") as file_obj:
         source = file_obj.read()
 
+
+    from dis import dis
+    dis(source)
+
+
     # Compile the source
-    compiled = compile(source, str(file_obj), "exec")
-    initial_code_block = code_to_codeblock(compiled)
-    module = Module(module_name, initial_code_block, name_dict=dict(BUILT_INS))
-    initial_code_block.module = module
-    module.name_dict["__name__"] = module_name
-    sandbox.all_modules[module_name] = module
-
-    # Grab other code blocks
-    for constant in compiled.co_consts:
-        if isinstance(constant, CodeClass):
-            code_block = code_to_codeblock(constant)
-            code_block.module = module
-            sandbox.code_blocks_by_name[str(constant)] = code_block
-
-    return initial_code_block
+    return code_to_codeblock(compile(source, str(file_obj), "exec"), sandbox, module_name)

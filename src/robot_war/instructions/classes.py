@@ -4,7 +4,6 @@ from robot_war.instructions import CodeLine
 
 try:
     from robot_war.exec_context import SandBox
-    from robot_war.source_functions import Function
 except ImportError:
     SandBox = None
 
@@ -12,20 +11,17 @@ except ImportError:
 LOG = logging.getLogger(__name__)
 
 
-def build_class(function: Function, name: str):
-    return SourceClass(name, function.code_block)
-
-
 class LoadAttr(CodeLine):
     def exec(self, sandbox: SandBox):
-        sandbox.push(sandbox.pop().getattr(self.note))
         super().exec(sandbox)
+        sandbox.push(sandbox.pop().get_attr(self.note))
 
 
 class LoadBuildClass(CodeLine):
     def exec(self, sandbox: SandBox):
-        sandbox.push(build_class)
         super().exec(sandbox)
+        from robot_war.source_class import build_class
+        sandbox.push(build_class)
 
 
 class LoadMethod(CodeLine):
@@ -48,6 +44,7 @@ class MakeFunction(CodeLine):
         super().exec(sandbox)
         name = sandbox.pop()
         code_block = sandbox.pop()
+        from robot_war.source_functions import Function
         function = Function(name, code_block)
         if self.operand & 0x01:
             function.default_args = sandbox.pop()
@@ -63,18 +60,20 @@ class MakeFunction(CodeLine):
 
 
 class SetupAnnotations(CodeLine):
-    pass
+    def exec(self, sandbox: SandBox):
+        super().exec(sandbox)
+        sandbox.context.name_dict["__annotations__"] = {}
 
 
 class StoreAttr(CodeLine):
     def exec(self, sandbox: SandBox):
+        super().exec(sandbox)
         obj = sandbox.pop()
         value = sandbox.pop()
-        obj.set_attr(obj, self.note, value)
-        super().exec(sandbox)
+        obj.set_attr(self.note, value)
 
 
 class StoreName(CodeLine):
     def exec(self, sandbox: SandBox):
-        sandbox.context.name_dict[self.note] = sandbox.pop()
         super().exec(sandbox)
+        sandbox.context.name_dict[self.note] = sandbox.pop()

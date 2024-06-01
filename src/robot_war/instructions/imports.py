@@ -31,16 +31,15 @@ class ImportName(CodeLine):
         parts = self.note.split(".")
 
         from robot_war.exec_context import CODE_STEP
-
-        def add(instruction):
-            code_block.code_lines[instruction.offset] = instruction
-            return instruction.offset + CODE_STEP
-
-        ip = 0
         from robot_war.instructions.data import LoadFast, BuildTuple, LoadConst, LoadSubscript
         from robot_war.instructions.flow_control import ReturnValue
         from robot_war.source_functions import Function, CodeBlock
         code_block = CodeBlock()
+        ip = 0
+
+        def add(instruction):
+            code_block.code_lines[instruction.offset] = instruction
+            return instruction.offset + CODE_STEP
 
         if parts[0] == ROBOT_WAR:
             modules_loaded, tuples_to_load = self.load_api(parts)
