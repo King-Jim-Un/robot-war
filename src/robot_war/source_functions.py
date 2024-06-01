@@ -32,3 +32,4 @@ class Function:
     name: str
     code_block: CodeBlock
     closure: tuple = ()
+    default_args: tuple = ()

@@ -39,7 +39,10 @@ class SandBox:
     def call_function(self, function, *args, **kwargs):
         if isinstance(function, Function):
             assert not kwargs, "TODO: kwargs"
-            fast_stack = {index: value for index, value in enumerate(args + function.closure)}
+            arg_list = ([None] * function.code_block.num_params)
+            arg_list = arg_list[:-len(function.default_args)] + list(function.default_args)
+            arg_list = list(args) + arg_list[len(args):] + list(function.closure)
+            fast_stack = {index: value for index, value in enumerate(arg_list)}
             module = function.code_block.module
             name_dict = module.name_dict if module else {}  # TODO: when running a member function, we need to use the class's name_dict
             self.call_stack.append(FunctionContext(function, fast_stack, name_dict))

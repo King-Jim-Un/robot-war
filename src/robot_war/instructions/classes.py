@@ -50,8 +50,7 @@ class MakeFunction(CodeLine):
         code_block = sandbox.pop()
         function = Function(name, code_block)
         if self.operand & 0x01:
-            LOG.error("TODO: Handle default values")
-            sandbox.pop()
+            function.default_args = sandbox.pop()
         if self.operand & 0x02:
             LOG.error("TODO: Handle keyword values")
             sandbox.pop()
