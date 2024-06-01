@@ -39,8 +39,6 @@ class SandBox:
     def call_function(self, function, *args, **kwargs):
         if isinstance(function, Function):
             assert not kwargs, "TODO: kwargs"
-            function.num_params = len(args)
-            LOG.warning("%r %r", args, function.closure)
             fast_stack = {index: value for index, value in enumerate(args + function.closure)}
             module = function.code_block.module
             name_dict = module.name_dict if module else {}  # TODO: when running a member function, we need to use the class's name_dict

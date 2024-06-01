@@ -1,9 +1,7 @@
 """Parse a source file into a module"""
 
-from dis import dis
-from io import StringIO
+from dis import get_instructions, code_info
 import logging
-import os
 from pathlib import Path
 import re
 
@@ -15,9 +13,8 @@ from robot_war.exec_context import SandBox
 
 # Constants:
 LOG = logging.getLogger(__name__)
-IMMEDIATE = "IMMEDIATE"
-LINE_SEARCH = re.compile(r"(\d*)\s+(\d+)\s(\w+)\s*(\d*)\s*(.*)")
-DISASSEMBLY_SEARCH = re.compile("Disassembly of (<.*>):")
+CodeClass = compile("0", "", "eval").__class__  # There's gotta be a better way!
+SearchNumArgs = re.compile(r"^Argument count:\s+(\d+)", re.MULTILINE)
 OpCodeClasses = {
     "BINARY_ADD": data.BinaryAdd,
     "BINARY_MULTIPLY": data.BinaryMultiply,
@@ -53,42 +50,41 @@ OpCodeClasses = {
 }
 
 
+def code_to_codeblock(code: CodeClass) -> CodeBlock:
+    code_block = CodeBlock()
+
+    # Add instructions
+    for instruction in get_instructions(code):
+        line_class = OpCodeClasses[instruction.opname]
+        code_block.code_lines[instruction.offset] = line_class(instruction.starts_line, instruction.offset,
+                                                               instruction.opname, instruction.arg, instruction.argrepr)
+
+    # Number of arguments
+    match = SearchNumArgs.search(code_info(code))
+    assert match
+    code_block.num_params = int(match.group(1))
+
+    return code_block
+
+
 def parse_source_file(sandbox: SandBox, module_name: str, file_path: Path) -> CodeBlock:
     # Load source file
     with file_path.open("rt") as file_obj:
         source = file_obj.read()
 
-    # Disassemble source
-    string_file = StringIO()
-    dis(source, file=string_file)
-    print(string_file.getvalue())  # TODO: remove
-    string_file.seek(os.SEEK_SET, 0)
-
-    # Create a module
-    initial_code_block = current_code_block = CodeBlock()
-    module = Module(module_name, current_code_block, name_dict=dict(BUILT_INS))
-    current_code_block.module = module
+    # Compile the source
+    compiled = compile(source, str(file_obj), "exec")
+    initial_code_block = code_to_codeblock(compiled)
+    module = Module(module_name, initial_code_block, name_dict=dict(BUILT_INS))
+    initial_code_block.module = module
     module.name_dict["__name__"] = module_name
     sandbox.all_modules[module_name] = module
 
-    # Extract code blocks
-    for line in string_file.readlines():
-        # Look for a new block marker
-        match = DISASSEMBLY_SEARCH.search(line)
-        if match:
-            # Found a new code block
-            block_name = match.group(1)
-            current_code_block = CodeBlock(module=module)
-            sandbox.code_blocks_by_name[block_name] = current_code_block
-        else:
-            # Look for an executable instruction
-            match = LINE_SEARCH.search(line)
-            if match:
-                # Found an instruction
-                line_number, offset, op_code, operand, note = match.groups()
-                line_class = OpCodeClasses[op_code]
-                code_line = line_class(int(line_number) if line_number else None, int(offset), op_code,
-                                       int(operand) if operand else None, note[1:-1] if note else None)
-                current_code_block.code_lines[int(offset)] = code_line
+    # Grab other code blocks
+    for constant in compiled.co_consts:
+        if isinstance(constant, CodeClass):
+            code_block = code_to_codeblock(constant)
+            code_block.module = module
+            sandbox.code_blocks_by_name[str(constant)] = code_block
 
     return initial_code_block

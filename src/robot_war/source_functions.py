@@ -20,6 +20,7 @@ LOG = logging.getLogger(__name__)
 class CodeBlock:
     code_lines: Dict[int, CodeLine] = field(default_factory=dict)
     module: Optional[Module] = None
+    num_params: int = 0
     constants: Dict[int, Any] = field(default_factory=dict)
 
     def __repr__(self):
@@ -30,5 +31,4 @@ class CodeBlock:
 class Function:
     name: str
     code_block: CodeBlock
-    num_params: int = 0
     closure: tuple = ()

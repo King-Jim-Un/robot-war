@@ -23,10 +23,10 @@ def run_program(source_file: Path) -> SandBox:
         14: LoadConst(None, 14, "LOAD_CONST", 1, "0"),  # Return code 0
         16: CallFunction(None, 16, "CALL_FUNCTION", 1, None),  # Create exception
         18: RaiseVarArgs(None, 18, "RAISE_VARARGS", 1, None)  # Raise exception
-    })
+    }, num_params=1)
     code_block.module = Module("__main_launcher__", code_block, name_dict=dict(BUILT_INS))
     sandbox = SandBox(source_file.parent)
-    sandbox.call_function(Function("__run_program__", code_block, 1), source_file)  # DO NOT SAVE FUNCTION IN NAMES
+    sandbox.call_function(Function("__run_program__", code_block), source_file)  # DO NOT SAVE FUNCTION IN NAMES
     return sandbox
 
 

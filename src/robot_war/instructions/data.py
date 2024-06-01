@@ -61,7 +61,7 @@ class CompareOp(CodeLine):
 class LoadClosure(CodeLine):
     def exec(self, sandbox: SandBox):
         super().exec(sandbox)
-        sandbox.push(sandbox.context.fast_stack[sandbox.context.function.num_params + self.operand])
+        sandbox.push(sandbox.context.fast_stack[sandbox.context.function.code_block.num_params + self.operand])
 
 
 class LoadDeref(LoadClosure):
@@ -129,5 +129,5 @@ class StoreSubscript(CodeLine):
 
 class StoreDeref(CodeLine):
     def exec(self, sandbox: SandBox):
-        sandbox.context.fast_stack[sandbox.context.function.num_params + self.operand] = sandbox.pop()
+        sandbox.context.fast_stack[sandbox.context.function.code_block.num_params + self.operand] = sandbox.pop()
         super().exec(sandbox)
