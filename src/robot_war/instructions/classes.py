@@ -26,11 +26,10 @@ class LoadBuildClass(CodeLine):
 
 class LoadMethod(CodeLine):
     def exec(self, sandbox: SandBox):
+        super().exec(sandbox)
         obj = sandbox.pop()
-        LOG.error("TODO: LoadMethod(%r.%s)", obj, self.note)
-        sandbox.push(None)
+        sandbox.push(obj.get_method(self.note))
         sandbox.push(obj)
-        sandbox.next()
 
 
 class LoadName(CodeLine):

@@ -50,3 +50,6 @@ class SourceInstance:
 
     def get_attr(self, name: str):
         return self.values[name]
+
+    def get_method(self, name: str):
+        return self.name_dict[name]

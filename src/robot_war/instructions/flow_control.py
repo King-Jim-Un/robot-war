@@ -32,14 +32,9 @@ class CallFunctionKW(CodeLine):
 
 class CallMethod(CodeLine):
     def exec(self, sandbox: SandBox):
-        args = []
-        for _ in range(self.operand):
-            args.insert(0, sandbox.pop())
-        obj = sandbox.pop()
-        method = sandbox.pop()
-        LOG.error("TODO: CallFunction %r %s%r", obj, method, args)
-        sandbox.push(None)
-        sandbox.next()
+        super().exec(sandbox)
+        rev_args = [sandbox.pop() for _ in range(self.operand + 1)]  # include self
+        sandbox.call_function(sandbox.pop(), *reversed(rev_args))
 
 
 class PopJumpIfFalse(CodeLine):
