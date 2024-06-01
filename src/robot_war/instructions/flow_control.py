@@ -19,6 +19,17 @@ class CallFunction(CodeLine):
         sandbox.call_function(sandbox.pop(), *reversed(rev_args))
 
 
+class CallFunctionKW(CodeLine):
+    def exec(self, sandbox: SandBox):
+        super().exec(sandbox)
+        tuple_kw_params = sandbox.pop()
+        kwargs = {}
+        for key in reversed(tuple_kw_params):
+            kwargs[key] = sandbox.pop()
+        rev_args = [sandbox.pop() for _ in range(self.operand - len(kwargs))]
+        sandbox.call_function(sandbox.pop(), *reversed(rev_args), **kwargs)
+
+
 class CallMethod(CodeLine):
     def exec(self, sandbox: SandBox):
         args = []

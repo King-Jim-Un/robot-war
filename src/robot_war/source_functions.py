@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 import logging
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 
 from robot_war.instructions import CodeLine
 
@@ -21,6 +21,7 @@ class CodeBlock:
     code_lines: Dict[int, CodeLine] = field(default_factory=dict)
     module: Optional[Module] = None
     num_params: int = 0
+    param_names: List[str] = field(default_factory=list)
     constants: Dict[int, Any] = field(default_factory=dict)
 
     def __repr__(self):

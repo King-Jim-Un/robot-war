@@ -15,6 +15,9 @@ from robot_war.exec_context import SandBox
 LOG = logging.getLogger(__name__)
 CodeClass = compile("0", "", "eval").__class__  # There's gotta be a better way!
 SearchNumArgs = re.compile(r"^Argument count:\s+(\d+)", re.MULTILINE)
+SearchVarNames1 = re.compile(r"^Variable names:(.*)", re.MULTILINE | re.DOTALL)
+SearchVarNames2 = re.compile(r"(.*?)^\S", re.MULTILINE | re.DOTALL)
+SearchVarNames3 = re.compile(r"(\d+): (\w+)")
 OpCodeClasses = {
     "BINARY_ADD": data.BinaryAdd,
     "BINARY_MULTIPLY": data.BinaryMultiply,
@@ -22,6 +25,7 @@ OpCodeClasses = {
     "BUILD_LIST": data.BuildList,
     "BUILD_TUPLE": data.BuildTuple,
     "CALL_FUNCTION": flow_control.CallFunction,
+    "CALL_FUNCTION_KW": flow_control.CallFunctionKW,
     "CALL_METHOD": flow_control.CallMethod,
     "COMPARE_OP": data.CompareOp,
     "IMPORT_FROM": imports.ImportFrom,
@@ -60,9 +64,20 @@ def code_to_codeblock(code: CodeClass) -> CodeBlock:
                                                                instruction.opname, instruction.arg, instruction.argrepr)
 
     # Number of arguments
-    match = SearchNumArgs.search(code_info(code))
+    info_str = code_info(code)
+    match = SearchNumArgs.search(info_str)
     assert match
     code_block.num_params = int(match.group(1))
+
+    # Argument names
+    match = SearchVarNames1.search(info_str)
+    if match:
+        var_name_str = match.group(1)
+        match = SearchVarNames2.search(var_name_str)
+        if match:
+            var_name_str = match.group(1)
+        var_name_dict = {int(index): name for index, name in SearchVarNames3.findall(var_name_str)}
+        code_block.param_names = [var_name_dict[index] for index in range(code_block.num_params)]
 
     return code_block
 
