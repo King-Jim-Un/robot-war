@@ -55,14 +55,15 @@ OpCodeClasses = {
 }
 
 
-def code_to_codeblock(code: CodeClass, sandbox: SandBox, module_name: str,
+def code_to_codeblock(path: Path, code: CodeClass, sandbox: SandBox, module_dot_name: str,
                       module: Optional[Module] = None) -> CodeBlock:
     code_block = CodeBlock()
     sandbox.code_blocks_by_name[str(code)] = code_block
     if module is None:
-        module = Module(module_name, code_block, name_dict=dict(BUILT_INS))
-        module.name_dict["__name__"] = module_name
-        sandbox.all_modules[module_name] = module
+        module = Module(module_dot_name, code_block, name_dict=dict(BUILT_INS), path=path,
+                        dot_path=module_dot_name.split("."))
+        module.name_dict["__name__"] = module_dot_name
+        sandbox.all_modules[module_dot_name] = module
     code_block.module = module
 
     # Add instructions
@@ -90,12 +91,12 @@ def code_to_codeblock(code: CodeClass, sandbox: SandBox, module_name: str,
     # Grab other code blocks
     for constant in code.co_consts:
         if isinstance(constant, CodeClass):
-            code_to_codeblock(constant, sandbox, module_name, module)
+            code_to_codeblock(path, constant, sandbox, module_dot_name, module)
 
     return code_block
 
 
-def parse_source_file(sandbox: SandBox, module_name: str, file_path: Path) -> CodeBlock:
+def parse_source_file(sandbox: SandBox, module_dot_name: str, file_path: Path) -> CodeBlock:
     # Load source file
     with file_path.open("rt") as file_obj:
         source = file_obj.read()
@@ -106,4 +107,4 @@ def parse_source_file(sandbox: SandBox, module_name: str, file_path: Path) -> Co
 
 
     # Compile the source
-    return code_to_codeblock(compile(source, str(file_obj), "exec"), sandbox, module_name)
+    return code_to_codeblock(file_path, compile(source, str(file_obj), "exec"), sandbox, module_dot_name)
