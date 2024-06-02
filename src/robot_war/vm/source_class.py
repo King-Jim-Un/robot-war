@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 import logging
-from typing import Dict, Any, Optional, Tuple
+from typing import Dict, Any, Optional, List
 
 from robot_war.vm.get_name import GetName
 from robot_war.vm.source_functions import Function
@@ -25,7 +25,7 @@ LOG = logging.getLogger(__name__)
 
 @dataclass
 class SourceClass(GetName):
-    parent_classes: Tuple["SourceClass", ...] = ()
+    parent_classes: List["SourceClass"] = ()
     module: Optional[Module] = None
 
     def get_name(self, name: str):

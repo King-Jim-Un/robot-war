@@ -1,7 +1,7 @@
 import logging
 from pathlib import Path
 
-from robot_war.run_program import run_program, exec_through
+from robot_war.vm.run_program import run_program, exec_through
 
 # Constants:
 LOG = logging.getLogger(__name__)

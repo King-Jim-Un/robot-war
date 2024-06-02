@@ -3,6 +3,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List, Any, Dict, Optional
 
+from robot_war.api import API_CLASSES
 from robot_war.exceptions import DontPushReturnValue
 from robot_war.vm.get_name import GetName
 from robot_war.vm.instructions.classes import LoadName
@@ -142,7 +143,8 @@ class SandBox:
         return self.context.data_stack.append(value)
 
     def build_class(self, function: Function, name: str, *parent_classes):
-        source_class = SourceClass({"__name__": name}, parent_classes, function.code_block.module)
+        class_list = [cls() if cls in API_CLASSES else cls for cls in parent_classes]
+        source_class = SourceClass({"__name__": name}, class_list, function.code_block.module)
 
         # Run the creation code function to set up our new class. Of course, the creation code just returns None, and we
         # need to return the new class, so we'll need a little wrapper.
