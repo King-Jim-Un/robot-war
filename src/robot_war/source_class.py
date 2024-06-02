@@ -65,7 +65,7 @@ class SourceInstance(GetName):
             return BoundMethod(instance=self, **obj.__dict__) if isinstance(obj, Function) else obj
 
     def get_method(self, name: str):
-        return self.name_dict[name]
+        return self.get_name(name)
 
     def get_name(self, name: str):
         return self.name_dict[name] if name in self.name_dict else self.source_class.get_name(name)
