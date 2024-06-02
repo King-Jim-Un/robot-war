@@ -101,10 +101,5 @@ def parse_source_file(sandbox: SandBox, module_dot_name: str, file_path: Path) -
     with file_path.open("rt") as file_obj:
         source = file_obj.read()
 
-
-    from dis import dis  # TODO: remove
-    dis(source)
-
-
     # Compile the source
     return code_to_codeblock(file_path, compile(source, str(file_obj), "exec"), sandbox, module_dot_name)

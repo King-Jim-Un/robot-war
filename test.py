@@ -10,4 +10,5 @@ PATH = Path(__file__).parent / "test-script.py"
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
+    logging.getLogger("robot_war.vm.instructions").setLevel(logging.WARNING)
     exec_through(run_program(PATH))
