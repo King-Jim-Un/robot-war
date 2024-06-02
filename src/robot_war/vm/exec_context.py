@@ -20,6 +20,10 @@ NameDict = Dict[str, Any]
 LOG = logging.getLogger(__name__)
 CODE_STEP = 2
 
+# FunctionContext knows about execution through a single function. Sandbox knows about the execution of a single thread
+# and all the nested function calls. A Playground knows all the threads for a given robot. If a player has multiple
+# robots operating simultaneously, they will have multiple Playground objects
+
 
 @dataclass
 class FunctionContext:
@@ -31,12 +35,17 @@ class FunctionContext:
 
 
 @dataclass
-class SandBox:
+class Playground:
     root_path: Path
     all_modules: Dict[str, Module] = field(default_factory=dict)
     code_blocks_by_name: CodeDict = field(default_factory=dict)
+    sandboxes: List["SandBox"] = field(default_factory=list)
+
+
+@dataclass
+class SandBox:
+    playground: Playground
     call_stack: List[FunctionContext] = field(default_factory=list)
-    api: Optional[Module] = None
 
     @property
     def context(self) -> FunctionContext:

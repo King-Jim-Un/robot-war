@@ -2,7 +2,7 @@ from pathlib import Path
 
 from robot_war.exceptions import RobotWarSystemExit
 from robot_war.vm.built_ins import BUILT_INS
-from robot_war.vm.exec_context import SandBox
+from robot_war.vm.exec_context import SandBox, Playground
 from robot_war.vm.instructions.classes import LoadName
 from robot_war.vm.instructions.data import BuildList, LoadConst, BuildTuple, LoadFast, PopTop
 from robot_war.vm.instructions.flow_control import CallFunction, RaiseVarArgs
@@ -11,7 +11,7 @@ from robot_war.vm.source_functions import Function, CodeBlock
 from robot_war.vm.source_module import Module
 
 
-def run_program(source_file: Path) -> SandBox:
+def run_program(source_file: Path) -> Playground:
     code_block = CodeBlock({
         # LOAD_MODULE_FILE_1 wants two parameters: and empty module list, and a tuple of (module_name, source_path)
         0: BuildList(None, 0, "BUILD_LIST", 0, None),
@@ -30,9 +30,11 @@ def run_program(source_file: Path) -> SandBox:
         18: RaiseVarArgs(None, 18, "RAISE_VARARGS", 1, None)  # Raise exception
     }, num_params=1)
     code_block.module = Module("__main_launcher__", code_block, name_dict=dict(BUILT_INS))
-    sandbox = SandBox(source_file.parent)
+    playground = Playground(source_file.parent)
+    sandbox = SandBox(playground)
+    playground.sandboxes = [sandbox]
     sandbox.call_function(Function("__run_program__", code_block), source_file)  # DO NOT SAVE FUNCTION IN NAMES
-    return sandbox
+    return playground
 
 
 def exec_through(sandbox: SandBox) -> int:

@@ -20,7 +20,7 @@ def main():
 
     # Note that run_program doesn't block while the program runs. It loads a program into the VM and the execution must
     # be advanced by steps or by calling exec_through()
-    sandbox = run_program(USER_FILENAME)
+    sandbox = run_program(USER_FILENAME).sandboxes[0]
 
     ui_running = user_running = True
     while ui_running:

@@ -58,12 +58,12 @@ OpCodeClasses = {
 def code_to_codeblock(path: Path, code: CodeClass, sandbox: SandBox, module_dot_name: str,
                       module: Optional[Module] = None) -> CodeBlock:
     code_block = CodeBlock()
-    sandbox.code_blocks_by_name[str(code)] = code_block
+    sandbox.playground.code_blocks_by_name[str(code)] = code_block
     if module is None:
         module = Module(module_dot_name, code_block, name_dict=dict(BUILT_INS), path=path,
                         dot_path=module_dot_name.split("."))
         module.name_dict["__name__"] = module_dot_name
-        sandbox.all_modules[module_dot_name] = module
+        sandbox.playground.all_modules[module_dot_name] = module
     code_block.module = module
 
     # Add instructions

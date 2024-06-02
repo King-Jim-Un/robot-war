@@ -77,7 +77,7 @@ class LoadConst(CodeLine):
             # Not yet. Is it a code block?
             if self.note.startswith("<"):
                 # Yes, grab the code
-                constants[self.operand] = sandbox.code_blocks_by_name[self.note]
+                constants[self.operand] = sandbox.playground.code_blocks_by_name[self.note]
             else:
                 # Something simple, just eval it
                 constants[self.operand] = eval(self.note)

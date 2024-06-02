@@ -94,10 +94,10 @@ class ImportName(CodeLine):
         # Is the next part already loaded?
         dot_path = from_dot_path + parts[:1]
         dotted = ".".join(dot_path)
-        if dotted in sandbox.all_modules:
+        if dotted in sandbox.playground.all_modules:
             # Great, continue from there
             modules_loaded, tuples_to_load = ImportName.find_files(sandbox, parts[1:], dot_path, start_dir / parts[0])
-            return [sandbox.all_modules[dotted]] + modules_loaded, tuples_to_load
+            return [sandbox.playground.all_modules[dotted]] + modules_loaded, tuples_to_load
 
         # Does the next part exist as a directory?
         path = start_dir / parts[0] / "__init__.py"
@@ -118,14 +118,15 @@ class ImportName(CodeLine):
     @staticmethod
     def find_load_files(sandbox: SandBox, parts: List[str]) -> Tuple[List[Module], List[Tuple[str, Path]]]:
         # First, let's check if we've already loaded some of this path starting from the root of the user's program
-        if parts[0] in sandbox.all_modules:
+        if parts[0] in sandbox.playground.all_modules:
             # Found it; start there
-            return ImportName.find_files(sandbox, parts, [], sandbox.root_path)
+            return ImportName.find_files(sandbox, parts, [], sandbox.playground.root_path)
 
         # We haven't loaded any of that yet, but the files might exist. Look for the files.
-        if (sandbox.root_path / f"{parts[0]}.py").exists() or (sandbox.root_path / parts[0] / "__init__.py").exists():
+        if (sandbox.playground.root_path / f"{parts[0]}.py").exists() or \
+                (sandbox.playground.root_path / parts[0] / "__init__.py").exists():
             # Found it; start there
-            return ImportName.find_files(sandbox, parts, [], sandbox.root_path)
+            return ImportName.find_files(sandbox, parts, [], sandbox.playground.root_path)
 
         # We can't find it from the root, so let's do some relative searching.
 
@@ -162,7 +163,7 @@ class LoadModuleFile1(CodeLine):  # Not in parser
         })
         from robot_war.vm.parse_source_file import parse_source_file
         module_block = parse_source_file(sandbox, module_dot_name, file_path)
-        module_list.append(sandbox.all_modules[module_dot_name])
+        module_list.append(sandbox.playground.all_modules[module_dot_name])
         sandbox.call_function(Function("__load_module_file_1__", launcher_block), module_list)
         sandbox.call_function(Function(module_dot_name, module_block))
 
