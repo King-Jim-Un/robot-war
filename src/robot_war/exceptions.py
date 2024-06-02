@@ -10,3 +10,7 @@ class ReturnException(Exception):
 @dataclass
 class RobotWarSystemExit(Exception):
     return_code: int
+
+
+class DontPushReturnValue(Exception):
+    """Thrown to indicate that the function will push its own return value"""

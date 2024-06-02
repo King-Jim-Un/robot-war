@@ -20,8 +20,7 @@ class LoadAttr(CodeLine):
 class LoadBuildClass(CodeLine):
     def exec(self, sandbox: SandBox):
         super().exec(sandbox)
-        from robot_war.source_class import build_class
-        sandbox.push(build_class)
+        sandbox.push(sandbox.build_class)
 
 
 class LoadMethod(CodeLine):
@@ -35,7 +34,7 @@ class LoadMethod(CodeLine):
 class LoadName(CodeLine):
     def exec(self, sandbox: SandBox):
         super().exec(sandbox)
-        sandbox.push(sandbox.context.name_dict[self.note])
+        sandbox.push(sandbox.context.get_name_obj.get_name(self.note))
 
 
 class MakeFunction(CodeLine):
@@ -61,7 +60,7 @@ class MakeFunction(CodeLine):
 class SetupAnnotations(CodeLine):
     def exec(self, sandbox: SandBox):
         super().exec(sandbox)
-        sandbox.context.name_dict["__annotations__"] = {}
+        sandbox.context.get_name_obj.name_dict["__annotations__"] = {}
 
 
 class StoreAttr(CodeLine):
@@ -75,4 +74,4 @@ class StoreAttr(CodeLine):
 class StoreName(CodeLine):
     def exec(self, sandbox: SandBox):
         super().exec(sandbox)
-        sandbox.context.name_dict[self.note] = sandbox.pop()
+        sandbox.context.get_name_obj.name_dict[self.note] = sandbox.pop()

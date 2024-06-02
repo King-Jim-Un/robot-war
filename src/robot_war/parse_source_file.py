@@ -101,7 +101,7 @@ def parse_source_file(sandbox: SandBox, module_name: str, file_path: Path) -> Co
         source = file_obj.read()
 
 
-    from dis import dis
+    from dis import dis  # TODO: remove
     dis(source)
 
 

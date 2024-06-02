@@ -1,48 +1,57 @@
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field
 import logging
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, Tuple
 
+from robot_war.get_name import GetName
 from robot_war.source_functions import Function
 
 try:
-    from robot_war.exec_context import NameDict
+    from robot_war.source_module import Module
 except ImportError:
-    NameDict = None
-
+    Module = None
 
 # Constants:
 LOG = logging.getLogger(__name__)
 
 
 # Creating a class:
-#   * Use MakeFunction to turn the constructor's code object into a function
+#   * Use MakeFunction to turn the creation code object into a function
 #   * Call build_class to turn the function into a class
-# Instantiating a class:
-#   * Call the class, which must
-#     * Create an instance
-#     * Execute the constructor
-#     * Execute the __init__ function
-#     * Return the instance
+#   * Execute the creation code to initialize name_dict
+# Calling a class:
+#   * Create an instance
+#   * Execute the __init__ function
+#   * Return the instance
+
+@dataclass
+class SourceClass(GetName):
+    parent_classes: Tuple["SourceClass", ...] = ()
+    module: Optional[Module] = None
+
+    def get_name(self, name: str):
+        # Do we have the name?
+        if name in self.name_dict:
+            return self.name_dict[name]
+
+        # No, do any of our parents?
+        for parent in self.parent_classes:
+            try:
+                return parent.get_name(name)
+            except KeyError:
+                pass
+
+        # Try the module's namespace
+        return self.module.get_name(name)
 
 
 @dataclass
 class Constructor(Function):
-    name_dict: NameDict = field(default_factory=dict)
-
-
-def build_class(function: Function, name: str):
-    return SourceClass(function)
+    source_class: Optional[SourceClass] = None
 
 
 @dataclass
-class SourceClass:
-    function: Function
-
-
-@dataclass
-class SourceInstance:
-    source_class: SourceClass
-    name_dict: NameDict = field(default_factory=dict)
+class SourceInstance(GetName):
+    source_class: Optional[SourceClass] = None
     values: Dict[str, Any] = field(default_factory=dict)
 
     def set_attr(self, name: str, value: Any):
@@ -52,11 +61,14 @@ class SourceInstance:
         if name in self.values:
             return self.values[name]
         else:
-            obj = self.name_dict[name]
-            return BoundMethod(instance=self, **obj.__dict__)if isinstance(obj, Function) else obj
+            obj = self.get_name(name)
+            return BoundMethod(instance=self, **obj.__dict__) if isinstance(obj, Function) else obj
 
     def get_method(self, name: str):
         return self.name_dict[name]
+
+    def get_name(self, name: str):
+        return self.name_dict[name] if name in self.name_dict else self.source_class.get_name(name)
 
 
 @dataclass
