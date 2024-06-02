@@ -4,13 +4,13 @@ from pathlib import Path
 from typing import List, Any, Dict, Optional
 
 from robot_war.exceptions import DontPushReturnValue
-from robot_war.get_name import GetName
-from robot_war.instructions.classes import LoadName
-from robot_war.instructions.data import LoadFast, PopTop
-from robot_war.instructions.flow_control import ReturnException, CallFunction, ReturnValue
-from robot_war.source_class import SourceClass, SourceInstance, BoundMethod, Constructor
-from robot_war.source_functions import CodeDict, Function, CodeBlock
-from robot_war.source_module import Module
+from robot_war.vm.get_name import GetName
+from robot_war.vm.instructions.classes import LoadName
+from robot_war.vm.instructions.data import LoadFast, PopTop
+from robot_war.vm.instructions.flow_control import ReturnException, CallFunction, ReturnValue
+from robot_war.vm.source_class import SourceClass, SourceInstance, BoundMethod, Constructor
+from robot_war.vm.source_functions import CodeDict, Function, CodeBlock
+from robot_war.vm.source_module import Module
 
 # Types:
 NameDict = Dict[str, Any]

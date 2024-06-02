@@ -3,8 +3,8 @@ import logging
 from pathlib import Path
 from typing import Optional, List
 
-from robot_war.get_name import GetName
-from robot_war.source_functions import Function
+from robot_war.vm.get_name import GetName
+from robot_war.vm.source_functions import Function
 
 # Constants:
 LOG = logging.getLogger(__name__)

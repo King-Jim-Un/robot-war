@@ -2,10 +2,10 @@ from dataclasses import dataclass, field
 import logging
 from typing import Dict, Any, Optional, List
 
-from robot_war.instructions import CodeLine
+from robot_war.vm.instructions import CodeLine
 
 try:
-    from robot_war.source_module import Module
+    from robot_war.vm.source_module import Module
 except ImportError:
     Module = None
 

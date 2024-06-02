@@ -1,14 +1,14 @@
 from pathlib import Path
 
-from robot_war.built_ins import BUILT_INS
 from robot_war.exceptions import RobotWarSystemExit
-from robot_war.exec_context import SandBox
-from robot_war.instructions.imports import LoadModuleFile1
-from robot_war.instructions.classes import LoadName
-from robot_war.instructions.data import BuildList, LoadConst, BuildTuple, LoadFast, PopTop
-from robot_war.instructions.flow_control import CallFunction, RaiseVarArgs
-from robot_war.source_functions import Function, CodeBlock
-from robot_war.source_module import Module
+from robot_war.vm.built_ins import BUILT_INS
+from robot_war.vm.exec_context import SandBox
+from robot_war.vm.instructions.classes import LoadName
+from robot_war.vm.instructions.data import BuildList, LoadConst, BuildTuple, LoadFast, PopTop
+from robot_war.vm.instructions.flow_control import CallFunction, RaiseVarArgs
+from robot_war.vm.instructions.imports import LoadModuleFile1
+from robot_war.vm.source_functions import Function, CodeBlock
+from robot_war.vm.source_module import Module
 
 
 def run_program(source_file: Path) -> SandBox:

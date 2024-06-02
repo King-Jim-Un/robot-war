@@ -1,9 +1,9 @@
 import logging
 
-from robot_war.instructions import CodeLine
+from robot_war.vm.instructions import CodeLine
 
 try:
-    from robot_war.exec_context import SandBox
+    from robot_war.vm.exec_context import SandBox
 except ImportError:
     SandBox = None
 
@@ -42,7 +42,7 @@ class MakeFunction(CodeLine):
         super().exec(sandbox)
         name = sandbox.pop()
         code_block = sandbox.pop()
-        from robot_war.source_functions import Function
+        from robot_war.vm.source_functions import Function
         function = Function(name, code_block)
         if self.operand & 0x01:
             function.default_args = sandbox.pop()

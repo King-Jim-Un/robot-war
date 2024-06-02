@@ -3,7 +3,7 @@ import logging
 from typing import Optional
 
 try:
-    from robot_war.exec_context import SandBox
+    from robot_war.vm.exec_context import SandBox
 except ImportError:
     SandBox = None
 

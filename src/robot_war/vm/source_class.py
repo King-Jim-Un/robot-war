@@ -2,11 +2,11 @@ from dataclasses import dataclass, field
 import logging
 from typing import Dict, Any, Optional, Tuple
 
-from robot_war.get_name import GetName
-from robot_war.source_functions import Function
+from robot_war.vm.get_name import GetName
+from robot_war.vm.source_functions import Function
 
 try:
-    from robot_war.source_module import Module
+    from robot_war.vm.source_module import Module
 except ImportError:
     Module = None
 

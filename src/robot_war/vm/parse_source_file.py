@@ -4,13 +4,13 @@ from dis import get_instructions, code_info
 import logging
 from pathlib import Path
 import re
-from typing import Optional, Tuple
+from typing import Optional
 
-from robot_war.built_ins import BUILT_INS
-from robot_war.source_functions import CodeBlock
-from robot_war.source_module import Module
-from robot_war.instructions import classes, data, flow_control, imports
-from robot_war.exec_context import SandBox
+from robot_war.vm.built_ins import BUILT_INS
+from robot_war.vm.instructions import classes, data, flow_control, imports
+from robot_war.vm.exec_context import SandBox
+from robot_war.vm.source_functions import CodeBlock
+from robot_war.vm.source_module import Module
 
 # Constants:
 LOG = logging.getLogger(__name__)

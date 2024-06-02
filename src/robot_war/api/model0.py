@@ -1,5 +1,5 @@
-from robot_war.source_module import Module
-from robot_war.source_class import SourceClass
+from robot_war.vm.source_class import SourceClass
+from robot_war.vm.source_module import Module
 
 
 def api_go(obj):

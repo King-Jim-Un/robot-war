@@ -1,10 +1,10 @@
 import logging
 
 from robot_war.exceptions import ReturnException
-from robot_war.instructions import CodeLine
+from robot_war.vm.instructions import CodeLine
 
 try:
-    from robot_war.exec_context import SandBox
+    from robot_war.vm.exec_context import SandBox
 except ImportError:
     SandBox = None
 

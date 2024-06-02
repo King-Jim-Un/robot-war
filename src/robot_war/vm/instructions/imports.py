@@ -2,11 +2,11 @@ import logging
 from pathlib import Path
 from typing import List, Tuple
 
-from robot_war.instructions import CodeLine
+from robot_war.vm.instructions import CodeLine
 
 try:
-    from robot_war.exec_context import SandBox
-    from robot_war.source_module import Module
+    from robot_war.vm.exec_context import SandBox
+    from robot_war.vm.source_module import Module
 except ImportError:
     SandBox = Module = None
 
@@ -30,10 +30,10 @@ class ImportName(CodeLine):
         assert level == 0, "TODO: non-zero level imports"
         parts = self.note.split(".")
 
-        from robot_war.exec_context import CODE_STEP
-        from robot_war.instructions.data import LoadFast, LoadConst, LoadSubscript
-        from robot_war.instructions.flow_control import ReturnValue
-        from robot_war.source_functions import Function, CodeBlock
+        from robot_war.vm.exec_context import CODE_STEP
+        from robot_war.vm.instructions.data import LoadFast, LoadConst, LoadSubscript
+        from robot_war.vm.instructions.flow_control import ReturnValue
+        from robot_war.vm.source_functions import Function, CodeBlock
         code_block = CodeBlock()
         ip = 0
 
@@ -148,19 +148,19 @@ class LoadModuleFile1(CodeLine):  # Not in parser
         push TOS: [module(0), module(1), ... module(N)]
         """
         super().exec(sandbox)
-        from robot_war.source_module import Module
+        from robot_war.vm.source_module import Module
         module_dot_name, file_path = sandbox.pop()
         module_list: List[Module] = sandbox.pop()
-        from robot_war.source_functions import Function, CodeBlock
-        from robot_war.instructions.data import PopTop, LoadFast
-        from robot_war.instructions.flow_control import ReturnValue
+        from robot_war.vm.source_functions import Function, CodeBlock
+        from robot_war.vm.instructions.data import PopTop, LoadFast
+        from robot_war.vm.instructions.flow_control import ReturnValue
         launcher_block = CodeBlock({
             # Note that we're not putting a call on this stack since we don't want this to be user-callable!
             0: PopTop(None, 0, "POP_TOP", 0, None),  # Discard the None that will be returned by importing the module
             2: LoadFast(None, 2, "LOAD_FAST", 0, "module_list"),  # Return the module list we create in advance
             4: ReturnValue(None, 4, "RETURN_VALUE", 0, None)  # This will do the push
         })
-        from robot_war.parse_source_file import parse_source_file
+        from robot_war.vm.parse_source_file import parse_source_file
         module_block = parse_source_file(sandbox, module_dot_name, file_path)
         module_list.append(sandbox.all_modules[module_dot_name])
         sandbox.call_function(Function("__load_module_file_1__", launcher_block), module_list)
@@ -176,6 +176,6 @@ class LoadModuleFile2(CodeLine):  # Not in parser
         """
         module_dot_name: str = sandbox.pop()
         module_name = module_dot_name.split(".")[-1]
-        from robot_war.source_module import Module
+        from robot_war.vm.source_module import Module
         module_list: List[Module] = sandbox.peek(-1)
         module_list[-2].name_dict[module_name] = module_list[-1]
