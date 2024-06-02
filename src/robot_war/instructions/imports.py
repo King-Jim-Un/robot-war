@@ -42,7 +42,7 @@ class ImportName(CodeLine):
             return instruction.offset + CODE_STEP
 
         if parts[0] == ROBOT_WAR:
-            modules_loaded, tuples_to_load = self.load_api(parts)
+            self.load_api(sandbox, parts)
         else:
             modules_loaded, tuples_to_load = self.find_load_files(sandbox, parts)
             ip = add(LoadFast(None, ip, "LOAD_FAST", 0, "modules_loaded"))
@@ -57,14 +57,25 @@ class ImportName(CodeLine):
                     ip = add(LoadModuleFile2(None, ip, "LOAD_MODULE_FILE_2", 0, None))
                     link_up = True
 
-        if from_list is None:
-            ip = add(LoadConst(None, ip, "LOAD_CONST", 0, "0"))
+            if from_list is None:
+                ip = add(LoadConst(None, ip, "LOAD_CONST", 0, "0"))
+            else:
+                ip = add(LoadConst(None, ip, "LOAD_CONST", 1, "-1"))
+            ip = add(LoadSubscript(None, ip, "LOAD_SUBSCR", 0, None))
+            add(ReturnValue(None, ip, "RETURN_VALUE", 0, None))
+            sandbox.call_function(Function("__import_name__", code_block), modules_loaded, *tuples_to_load)
+            # TODO: Need to be some sort of mechanism to verify that we actually imported the name
+
+    @staticmethod
+    def load_api(sandbox: SandBox, parts: List[str]):
+        if parts == [ROBOT_WAR]:
+            from robot_war.api import API_MODULE
+            sandbox.push(API_MODULE)
+        elif len(parts) == 2:
+            from robot_war.api import MODELS
+            sandbox.push(MODELS[parts[1]])
         else:
-            ip = add(LoadConst(None, ip, "LOAD_CONST", 1, "-1"))
-        ip = add(LoadSubscript(None, ip, "LOAD_SUBSCR", 0, None))
-        add(ReturnValue(None, ip, "RETURN_VALUE", 0, None))
-        sandbox.call_function(Function("__import_name__", code_block), modules_loaded, *tuples_to_load)
-        # TODO: Need to be some sort of mechanism to verify that we actually imported the name
+            raise ImportError(f"Unable to import {'.'.join(parts)}")
 
     @staticmethod
     def find_files(sandbox: SandBox, parts: List[str], from_dot_path: List[str],

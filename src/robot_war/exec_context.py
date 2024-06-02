@@ -64,36 +64,39 @@ class SandBox:
             # Calling a class as a function instantiates an object
             instance = SourceInstance({"__name__": function.module.name}, function)
 
-            # But we can't just run the __init__ function as it will return None. We need to return the instance, so we
-            # create a little wrapper function to fix that up. We'll pass in parameters __init__, instance, and the
-            # arguments we received.
-            init_func = function.get_name("__init__")
-            fast_stack = self.args_to_fast(init_func, init_func, instance, *args, **kwargs)
-            num_args = len(fast_stack) - 1  # Skipping __init__
+            try:
+                # But we can't just run the __init__ function as it will return None. We need to return the instance,
+                # so we create a little wrapper function to fix that up. We'll pass in parameters __init__, instance,
+                # and the arguments we received.
+                init_func = function.get_name("__init__")
+                fast_stack = self.args_to_fast(init_func, init_func, instance, *args, **kwargs)
+                num_args = len(fast_stack) - 1  # Skipping __init__
 
-            # Create the wrapper function
-            code_block = CodeBlock(num_params=len(fast_stack))
-            wrapper = Function("__wrapper__", code_block)
-            ip = 0
+                # Create the wrapper function
+                code_block = CodeBlock(num_params=len(fast_stack))
+                wrapper = Function("__wrapper__", code_block)
+                ip = 0
 
-            def add(instruction):
-                code_block.code_lines[instruction.offset] = instruction
-                return instruction.offset + CODE_STEP
+                def add(instruction):
+                    code_block.code_lines[instruction.offset] = instruction
+                    return instruction.offset + CODE_STEP
 
-            # Load the parameters and call the __init__
-            ip = add(LoadName(None, ip, "LOAD_FAST", 0, "__init__"))
-            for index in range(num_args):
-                ip = add(LoadFast(None, ip, "LOAD_FAST", index + 1, f"arg[{index}]"))
-            ip = add(CallFunction(None, ip, "CALL_FUNCTION", num_args, None))
+                # Load the parameters and call the __init__
+                ip = add(LoadName(None, ip, "LOAD_FAST", 0, "__init__"))
+                for index in range(num_args):
+                    ip = add(LoadFast(None, ip, "LOAD_FAST", index + 1, f"arg[{index}]"))
+                ip = add(CallFunction(None, ip, "CALL_FUNCTION", num_args, None))
 
-            # Discard __init__'s return value
-            ip = add(PopTop(None, ip, "POP_TOP", 0, None))
+                # Discard __init__'s return value
+                ip = add(PopTop(None, ip, "POP_TOP", 0, None))
 
-            # Return our instance
-            ip = add(LoadFast(None, ip, "LOAD_FAST", 1, "instance"))
-            add(ReturnValue(None, ip, "RETURN_VALUE", 0, None))
+                # Return our instance
+                ip = add(LoadFast(None, ip, "LOAD_FAST", 1, "instance"))
+                add(ReturnValue(None, ip, "RETURN_VALUE", 0, None))
 
-            self.call_stack.append(FunctionContext(wrapper, fast_stack, instance))
+                self.call_stack.append(FunctionContext(wrapper, fast_stack, instance))
+            except KeyError:
+                self.push(instance)  # No __init__()
 
         elif isinstance(function, Constructor):
             fast_stack = self.args_to_fast(function, *args, **kwargs)

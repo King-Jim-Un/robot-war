@@ -41,7 +41,10 @@ class SourceClass(GetName):
                 pass
 
         # Try the module's namespace
-        return self.module.get_name(name)
+        if self.module:
+            return self.module.get_name(name)
+        else:
+            raise KeyError(f"{name} not found")
 
 
 @dataclass

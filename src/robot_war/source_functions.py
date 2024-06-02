@@ -32,6 +32,6 @@ class CodeBlock:
 @dataclass
 class Function:
     name: str
-    code_block: CodeBlock
+    code_block: CodeBlock = field(default_factory=CodeBlock)
     closure: tuple = ()
     default_args: tuple = ()
