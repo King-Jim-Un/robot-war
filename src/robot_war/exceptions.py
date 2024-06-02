@@ -14,3 +14,7 @@ class RobotWarSystemExit(Exception):
 
 class DontPushReturnValue(Exception):
     """Thrown to indicate that the function will push its own return value"""
+
+
+class TerminalError(BaseException):
+    """Thrown when user code cannot recover"""

@@ -4,7 +4,8 @@ from pathlib import Path
 from typing import List, Any, Dict, Optional
 
 from robot_war.api import API_CLASSES
-from robot_war.exceptions import DontPushReturnValue
+from robot_war.exceptions import DontPushReturnValue, TerminalError
+from robot_war.vm.api_class import ApiClass
 from robot_war.vm.get_name import GetName
 from robot_war.vm.instructions.classes import LoadName
 from robot_war.vm.instructions.data import LoadFast, PopTop
@@ -40,6 +41,7 @@ class Playground:
     all_modules: Dict[str, Module] = field(default_factory=dict)
     code_blocks_by_name: CodeDict = field(default_factory=dict)
     sandboxes: List["SandBox"] = field(default_factory=list)
+    robot: Optional[ApiClass] = None
 
 
 @dataclass
@@ -152,7 +154,17 @@ class SandBox:
         return self.context.data_stack.append(value)
 
     def build_class(self, function: Function, name: str, *parent_classes):
-        class_list = [cls() if cls in API_CLASSES else cls for cls in parent_classes]
+        num_api_parents = len([cls for cls in parent_classes if cls in API_CLASSES])
+        if num_api_parents == 0:
+            class_list = list(parent_classes)
+        elif num_api_parents == 1:
+            assert self.playground.robot is None, "each VM can only instantiate a single robot"
+            robot = [cls() for cls in parent_classes if cls in API_CLASSES][0]
+            class_list = [robot if cls in API_CLASSES else cls for cls in parent_classes]
+            self.playground.robot = robot
+            LOG.debug("Instantiated robot %r", robot)
+        else:
+            raise TerminalError("Robots can only inherit from a single API class")
         source_class = SourceClass({"__name__": name}, class_list, function.code_block.module)
 
         # Run the creation code function to set up our new class. Of course, the creation code just returns None, and we
