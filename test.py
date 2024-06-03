@@ -6,14 +6,14 @@ from typing import Dict, Optional
 
 from robot_war.exceptions import RobotWarSystemExit
 from robot_war.vm.api_class import ApiClass
-from robot_war.vm.exec_context import SandBox, Playground
+from robot_war.vm.exec_context import Playground
 from robot_war.vm.run_program import run_program
 
 # Constants:
 LOG = logging.getLogger(__name__)
 ROOT_PATH = Path(__file__).parent
 ROBOT_IMAGE_FILENAME = ROOT_PATH / "assets" / "robot1.png"
-USER_FILENAME = ROOT_PATH / "test-script.py"
+USER_FILENAME = ROOT_PATH / "user-scripts" / "test-script.py"
 
 
 @dataclass
