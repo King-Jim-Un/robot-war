@@ -23,7 +23,9 @@ class Sprite:
     facing: float = 0.0
 
     def draw(self, screen: pygame.Surface):
-        screen.blit(pygame.transform.rotate(self.image, -self.facing), self.position)
+        transformed = pygame.transform.rotate(self.image, -self.facing)
+        size = pygame.Vector2(transformed.get_size())
+        screen.blit(transformed, self.position - (size / 2))
 
 
 @dataclass
@@ -80,7 +82,9 @@ class RobotSprite:
         return self.robot.facing
 
     def draw(self, screen: pygame.Surface):
-        screen.blit(pygame.transform.rotate(self.image, -self.facing), self.position)
+        transformed = pygame.transform.rotate(self.image, -self.facing)
+        size = pygame.Vector2(transformed.get_size())
+        screen.blit(transformed, self.position - (size / 2))
 
 
 @dataclass

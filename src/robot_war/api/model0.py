@@ -8,13 +8,13 @@ from robot_war.vm.source_module import Module
 
 # Constants:
 LOG = logging.getLogger(__name__)
-DEG_PER_TICK = 2.0
-DIST_PER_TICK = 3.0
+DEG_PER_TICK = 3.0
+DIST_PER_TICK = 5.0
 
 
 @dataclass
 class Robot(ApiClass):
-    position: Vector2 = Vector2(500.0, 300.0)
+    position: Vector2 = Vector2(300.0, 200.0)
     facing: float = 0.0
 
     def turn_right(self, angle):
