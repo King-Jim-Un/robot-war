@@ -43,6 +43,12 @@ class Playground:
     sandboxes: List["SandBox"] = field(default_factory=list)
     robot: Optional[ApiClass] = None
 
+    def set_robot(self, robot: ApiClass):
+        self.robot = robot
+
+    def unset_robot(self):
+        self.robot = None
+
 
 @dataclass
 class SandBox:
@@ -165,7 +171,7 @@ class SandBox:
             assert self.playground.robot is None, "each VM can only instantiate a single robot"
             robot = [cls(playground=self.playground) for cls in parent_classes if cls in API_CLASSES][0]
             class_list = [robot if cls in API_CLASSES else cls for cls in parent_classes]
-            self.playground.robot = robot
+            self.playground.set_robot(robot)
             LOG.debug("Instantiated robot %r", robot)
         else:
             raise TerminalError("Robots can only inherit from a single API class")
