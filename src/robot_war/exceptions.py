@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Generator
 
 
 @dataclass
@@ -18,3 +18,8 @@ class DontPushReturnValue(Exception):
 
 class TerminalError(BaseException):
     """Thrown when user code cannot recover"""
+
+
+@dataclass
+class BlockThread(Exception):
+    generator: Generator

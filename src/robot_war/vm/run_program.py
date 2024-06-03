@@ -12,7 +12,9 @@ from robot_war.vm.source_functions import Function, CodeBlock
 from robot_war.vm.source_module import Module
 
 
-def run_program(source_file: Path, playground: Optional[Playground] = None) -> Playground:
+def run_program(source_file: Path, sandbox: Optional[SandBox] = None) -> Optional[Playground]:
+    # If a sandbox is provided, run_program() returns None. If sandbox=None, run_program() will create one and return a
+    # Playground object containing it.
     code_block = CodeBlock({
         # LOAD_MODULE_FILE_1 wants two parameters: and empty module list, and a tuple of (module_name, source_path)
         0: BuildList(None, 0, "BUILD_LIST", 0, None),
@@ -31,10 +33,11 @@ def run_program(source_file: Path, playground: Optional[Playground] = None) -> P
         18: RaiseVarArgs(None, 18, "RAISE_VARARGS", 1, None)  # Raise exception
     }, num_params=1)
     code_block.module = Module("__main_launcher__", code_block, name_dict=dict(BUILT_INS))
-    if playground is None:
+    playground = None
+    if sandbox is None:
         playground = Playground(source_file.parent)
-    sandbox = SandBox(playground)
-    playground.sandboxes = [sandbox]
+        sandbox = SandBox(playground)
+        playground.sandboxes = [sandbox]
     sandbox.call_function(Function("__run_program__", code_block), source_file)  # DO NOT SAVE FUNCTION IN NAMES
     return playground
 

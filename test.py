@@ -2,11 +2,11 @@ from dataclasses import dataclass, field
 import logging
 from pathlib import Path
 import pygame
-from typing import Dict, Optional
+from typing import Dict, Optional, Generator, List
 
-from robot_war.exceptions import RobotWarSystemExit
+from robot_war.exceptions import RobotWarSystemExit, BlockThread
 from robot_war.vm.api_class import ApiClass
-from robot_war.vm.exec_context import Playground
+from robot_war.vm.exec_context import Playground, SandBox
 from robot_war.vm.run_program import run_program
 
 # Constants:
@@ -93,6 +93,17 @@ class MyPlayground(Playground):
         self.game_engine.sprites.add(sprite)
 
 
+class MySandbox(SandBox):
+    def block_thread(self, block_thread: BlockThread):
+        self.playground.game_engine.block_thread(self, block_thread)
+
+
+@dataclass
+class BlockGenerator:
+    generator: Generator
+    sandbox: SandBox
+
+
 class RobotWarEngine(GameEngine):
     def __init__(self, video_size):
         super().__init__(video_size)
@@ -101,7 +112,11 @@ class RobotWarEngine(GameEngine):
         # Note that run_program doesn't block while the program runs. It loads a program into the VM and the execution
         # must be advanced by steps or by calling exec_through()
         self.playground = MyPlayground(USER_FILENAME, game_engine=self)
-        run_program(USER_FILENAME, self.playground)
+        sandbox = MySandbox(self.playground)
+        self.playground.sandboxes = [sandbox]
+        self.workers: List[BlockGenerator] = []
+
+        run_program(USER_FILENAME, sandbox)
         self.user_running = True
 
     def paint_ui(self):
@@ -115,6 +130,28 @@ class RobotWarEngine(GameEngine):
                     sandbox.step()
                 except RobotWarSystemExit:
                     self.user_running = False
+
+        index = 0
+        while index < len(self.workers):
+            worker = self.workers[index]
+            try:
+                next(worker.generator)
+            except StopIteration as stop:
+                del self.workers[index]
+                worker.sandbox.playground.sandboxes.append(worker.sandbox)
+                worker.sandbox.push(stop.value)
+            else:
+                index += 1
+
+    def block_thread(self, sandbox: SandBox, block_thread: BlockThread):
+        # Find the sandbox
+        for index, the_sandbox in enumerate(self.playground.sandboxes):
+            if sandbox is the_sandbox:
+                del self.playground.sandboxes[index]
+                self.workers.append(BlockGenerator(block_thread.generator, sandbox))
+                break
+        else:
+            raise KeyError("sandbox not found")
 
 
 def main():

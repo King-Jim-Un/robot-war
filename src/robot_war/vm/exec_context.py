@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import List, Any, Dict, Optional
 
 from robot_war.api import API_CLASSES
-from robot_war.exceptions import DontPushReturnValue, TerminalError
+from robot_war.exceptions import DontPushReturnValue, TerminalError, BlockThread
 from robot_war.vm.api_class import ApiClass, ApiMethod
 from robot_war.vm.get_name import GetName
 from robot_war.vm.instructions.classes import LoadName
@@ -137,6 +137,8 @@ class SandBox:
                 self.push(function(*args, **kwargs))
             except DontPushReturnValue:
                 pass
+            except BlockThread as block_thread:
+                self.block_thread(block_thread)
 
     def step(self):
         try:
@@ -195,3 +197,6 @@ class SandBox:
         }, num_params=2))
         self.call_stack.append(FunctionContext(wrapper, {0: constructor, 1: source_class}, source_class))
         raise DontPushReturnValue()
+
+    def block_thread(self, block_thread: BlockThread):
+        raise NotImplementedError()
