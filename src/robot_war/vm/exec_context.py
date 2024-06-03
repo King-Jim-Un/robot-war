@@ -5,7 +5,7 @@ from typing import List, Any, Dict, Optional
 
 from robot_war.api import API_CLASSES
 from robot_war.exceptions import DontPushReturnValue, TerminalError
-from robot_war.vm.api_class import ApiClass
+from robot_war.vm.api_class import ApiClass, ApiMethod
 from robot_war.vm.get_name import GetName
 from robot_war.vm.instructions.classes import LoadName
 from robot_war.vm.instructions.data import LoadFast, PopTop
@@ -123,6 +123,10 @@ class SandBox:
             self.call_stack.append(FunctionContext(function, fast_stack, function.code_block.module))
 
         else:
+            if isinstance(function, ApiMethod) and args and isinstance(args[0], SourceInstance):
+                function = function.function
+                args = (self.playground.robot,) + args[1:]
+
             try:
                 self.push(function(*args, **kwargs))
             except DontPushReturnValue:
@@ -159,7 +163,7 @@ class SandBox:
             class_list = list(parent_classes)
         elif num_api_parents == 1:
             assert self.playground.robot is None, "each VM can only instantiate a single robot"
-            robot = [cls() for cls in parent_classes if cls in API_CLASSES][0]
+            robot = [cls(playground=self.playground) for cls in parent_classes if cls in API_CLASSES][0]
             class_list = [robot if cls in API_CLASSES else cls for cls in parent_classes]
             self.playground.robot = robot
             LOG.debug("Instantiated robot %r", robot)

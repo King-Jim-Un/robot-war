@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from pygame import Vector2
 
 from robot_war.vm.api_class import ApiClass
 from robot_war.vm.source_module import Module
@@ -6,15 +7,14 @@ from robot_war.vm.source_module import Module
 
 @dataclass
 class Robot(ApiClass):
-    x: float = 0.0
-    y: float = 0.0
+    position: Vector2 = Vector2(500.0, 300.0)
     facing: float = 0.0
 
-    def turn_right(self, distance):
-        print(f"turn_right({distance})")
+    def turn_right(self, angle):
+        self.facing += angle
 
     def forward(self, distance):
-        print(f"forward({distance})")
+        self.position += Vector2.from_polar((distance, self.facing))
 
     def shoot(self, distance):
         print(f"shoot({distance})")

@@ -20,7 +20,7 @@ def main():
 
     # Note that run_program doesn't block while the program runs. It loads a program into the VM and the execution must
     # be advanced by steps or by calling exec_through()
-    sandbox = run_program(USER_FILENAME).sandboxes[0]
+    playground = run_program(USER_FILENAME)
 
     ui_running = user_running = True
     while ui_running:
@@ -29,13 +29,15 @@ def main():
                 ui_running = False
 
         screen.fill("slateblue4")
-        screen.blit(robot_image, (500, 300))
-
-        if user_running:
-            try:
-                sandbox.step()
-            except RobotWarSystemExit:
-                user_running = False
+        robot = playground.robot
+        if robot:
+            screen.blit(pygame.transform.rotate(robot_image, -robot.facing), robot.position)
+        for sandbox in playground.sandboxes:
+            if user_running:
+                try:
+                    sandbox.step()
+                except RobotWarSystemExit:
+                    user_running = False
 
         pygame.display.flip()
         clock.tick(60)
