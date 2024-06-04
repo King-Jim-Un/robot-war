@@ -10,6 +10,7 @@ from robot_war.vm.source_module import Module
 LOG = logging.getLogger(__name__)
 DEG_PER_TICK = 3.0
 DIST_PER_TICK = 5.0
+FIRE_PER_TICK = 10.0
 
 
 @dataclass
@@ -45,6 +46,20 @@ class Robot(ApiClass):
 
     def shoot(self, distance):
         LOG.warning("shoot(%f)", distance)
+        game_engine = self.playground.game_engine
+        fireball = game_engine.create_sprite(game_engine.fireball_image, self.position, self.facing)
+        stop = self.position + Vector2.from_polar((distance, self.facing))
+
+        def move():
+            moved = 0.0
+            while moved < distance:
+                fireball.position += Vector2.from_polar((FIRE_PER_TICK, self.facing))
+                moved += FIRE_PER_TICK
+                yield
+            fireball.position = stop
+            game_engine.delete_sprite(fireball)
+
+        raise BlockThread(move())
 
 
 MODEL0_MODULE = Module("model0", name_dict={"Robot": Robot})

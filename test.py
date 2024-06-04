@@ -13,13 +13,14 @@ from robot_war.vm.run_program import run_program
 LOG = logging.getLogger(__name__)
 ROOT_PATH = Path(__file__).parent
 ROBOT_IMAGE_FILENAME = ROOT_PATH / "assets" / "robot1.png"
+FIREBALL_IMAGE_FILENAME = ROOT_PATH / "assets" / "fireball1.png"
 USER_FILENAME = ROOT_PATH / "user-scripts" / "test-script.py"
 
 
 @dataclass
 class Sprite:
     image: pygame.Surface
-    position: tuple = (0.0, 0.0)
+    position: pygame.Vector2 = pygame.Vector2(0.0, 0.0)
     facing: float = 0.0
 
     def draw(self, screen: pygame.Surface):
@@ -32,9 +33,12 @@ class Sprite:
 class Sprites:
     sprites: Dict[int, Sprite] = field(default_factory=dict)
 
-    def add(self, sprite: Sprite) -> int:
+    def add(self, sprite: Sprite) -> Sprite:
         self.sprites[id(sprite)] = sprite
-        return id(sprite)
+        return sprite
+
+    def delete(self, sprite: Sprite):
+        del self.sprites[id(sprite)]
 
     def draw(self, screen: pygame.Surface):
         for sprite in self.sprites.values():
@@ -112,6 +116,7 @@ class RobotWarEngine(GameEngine):
     def __init__(self, video_size):
         super().__init__(video_size)
         self.robot_image = pygame.transform.scale_by(pygame.image.load(ROBOT_IMAGE_FILENAME), 0.25)
+        self.fireball_image = pygame.transform.scale_by(pygame.image.load(FIREBALL_IMAGE_FILENAME), 0.2)
 
         # Note that run_program doesn't block while the program runs. It loads a program into the VM and the execution
         # must be advanced by steps or by calling exec_through()
@@ -156,6 +161,12 @@ class RobotWarEngine(GameEngine):
                 break
         else:
             raise KeyError("sandbox not found")
+
+    def create_sprite(self, image: pygame.Surface, position: pygame.Vector2, facing: float) -> Sprite:
+        return self.sprites.add(Sprite(image, pygame.Vector2(position), facing))
+
+    def delete_sprite(self, sprite: Sprite):
+        return self.sprites.delete(sprite)
 
 
 def main():
