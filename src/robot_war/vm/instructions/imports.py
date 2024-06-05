@@ -31,7 +31,7 @@ class ImportName(CodeLine):
         parts = self.note.split(".")
 
         from robot_war.vm.exec_context import CODE_STEP
-        from robot_war.vm.instructions.data import LoadFast, LoadConst, LoadSubscript
+        from robot_war.vm.instructions.data import LoadFast, LoadConstant, LoadSubscript
         from robot_war.vm.instructions.flow_control import ReturnValue
         from robot_war.vm.source_functions import Function, CodeBlock
         code_block = CodeBlock()
@@ -52,18 +52,18 @@ class ImportName(CodeLine):
                 ip = add(LoadModuleFile1(None, ip, "LOAD_MODULE_FILE_1", 0, None))
                 if link_up:
                     ip = add(LoadFast(None, ip, "LOAD_FAST", index + 1, f"tuples_to_load[{index}]"))
-                    ip = add(LoadConst(None, ip, "LOAD_CONST", 0, "0"))
+                    ip = add(LoadConstant(None, ip, "LOAD_CONST", 0, "0"))
                     ip = add(LoadSubscript(None, ip, "LOAD_SUBSCR", 0, None))
                     ip = add(LoadModuleFile2(None, ip, "LOAD_MODULE_FILE_2", 0, None))
                     link_up = True
 
             if from_list is None:
-                ip = add(LoadConst(None, ip, "LOAD_CONST", 0, "0"))
+                ip = add(LoadConstant(None, ip, "LOAD_CONST", 0, "0"))
             else:
-                ip = add(LoadConst(None, ip, "LOAD_CONST", 1, "-1"))
+                ip = add(LoadConstant(None, ip, "LOAD_CONST", 1, "-1"))
             ip = add(LoadSubscript(None, ip, "LOAD_SUBSCR", 0, None))
             add(ReturnValue(None, ip, "RETURN_VALUE", 0, None))
-            sandbox.call_function(Function("__import_name__", code_block), modules_loaded, *tuples_to_load)
+            sandbox.call_function(Function("__import_name__", code_block=code_block), modules_loaded, *tuples_to_load)
             # TODO: Need to be some sort of mechanism to verify that we actually imported the name
 
     @staticmethod
@@ -164,8 +164,8 @@ class LoadModuleFile1(CodeLine):  # Not in parser
         from robot_war.vm.parse_source_file import parse_source_file
         module_block = parse_source_file(sandbox, module_dot_name, file_path)
         module_list.append(sandbox.playground.all_modules[module_dot_name])
-        sandbox.call_function(Function("__load_module_file_1__", launcher_block), module_list)
-        sandbox.call_function(Function(module_dot_name, module_block))
+        sandbox.call_function(Function("__load_module_file_1__", code_block=launcher_block), module_list)
+        sandbox.call_function(Function(module_dot_name, code_block=module_block))
 
 
 class LoadModuleFile2(CodeLine):  # Not in parser

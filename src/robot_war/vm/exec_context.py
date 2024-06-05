@@ -92,7 +92,7 @@ class SandBox:
 
                 # Create the wrapper function
                 code_block = CodeBlock(num_params=len(fast_stack))
-                wrapper = Function("__wrapper__", code_block)
+                wrapper = Function("__wrapper__", code_block=code_block)
                 ip = 0
 
                 def add(instruction):
@@ -143,10 +143,10 @@ class SandBox:
 
     def step(self):
         try:
-            # context = self.context
-            # instruction = context.function.code_block.code_lines[context.pc]
-            # instruction.exec(self)
-            self.context.function.code_block.code_lines[self.context.pc].exec(self)
+            context = self.context
+            instruction = context.function.code_block.code_lines[context.pc]
+            instruction.exec(self)
+            # self.context.function.code_block.code_lines[self.context.pc].exec(self)
         except ReturnException as rc:
             assert not self.call_stack.pop().data_stack, "Data stack wasn't empty"
             if self.call_stack:
@@ -172,10 +172,9 @@ class SandBox:
             class_list = list(parent_classes)
         elif num_api_parents == 1:
             assert self.playground.robot is None, "each VM can only instantiate a single robot"
-            robot = [cls(_playground=self.playground) for cls in parent_classes if cls in API_CLASSES][0]
-            class_list = [robot if cls in API_CLASSES else cls for cls in parent_classes]
-            self.playground.set_robot(robot)
-            LOG.debug("Instantiated robot %r", robot)
+            class_list = [parent_classes[0](_playground=self.playground)]
+            self.playground.set_robot(class_list[0])
+            LOG.debug("Instantiated robot %r", class_list[0])
         else:
             raise TerminalError("Robots can only inherit from a single API class")
         source_class = SourceClass({"__name__": name}, class_list, function.code_block.module)
@@ -186,17 +185,16 @@ class SandBox:
         # A second complication is function, which is just a regular function, so its namespace is module. We want to
         # use the class's namespace. To specify the right namespace, we'll create a temporary Constructor object.
         constructor = Constructor(source_class=source_class, **function.__dict__)
-        wrapper = Function("__wrapper__", CodeBlock({
+        with Function("__wrapper__", ["creator", "source_class"]) as wrapper:
             # Call creation function
-            0: LoadFast(None, 0, "LOAD_FAST", 0, "creation"),
-            2: CallFunction(None, 2, "CALL_FUNCTION", 0, None),
+            wrapper.LOAD_FAST("creator")
+            wrapper.CALL_FUNCTION(0)
             # Discard result
-            4: PopTop(None, 4, "POP_TOP", 0, None),
+            wrapper.POP_TOP()
             # Return class
-            6: LoadFast(None, 6, "LOAD_FAST", 1, "source_class"),
-            8: ReturnValue(None, 8, "RETURN_VALUE", 0, None)
-        }, num_params=2))
-        self.call_stack.append(FunctionContext(wrapper, {0: constructor, 1: source_class}, source_class))
+            wrapper.LOAD_FAST("source_class")
+            wrapper.RETURN_VALUE()
+        self.call_stack.append(wrapper.function_context(source_class, constructor, source_class))
         raise DontPushReturnValue()
 
     def block_thread(self, block_thread: BlockThread):

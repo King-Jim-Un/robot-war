@@ -14,12 +14,12 @@ from robot_war.vm.source_module import Module
 
 # Constants:
 LOG = logging.getLogger(__name__)
-CodeClass = compile("0", "", "eval").__class__  # There's gotta be a better way!
-SearchNumArgs = re.compile(r"^Argument count:\s+(\d+)", re.MULTILINE)
-SearchVarNames1 = re.compile(r"^Variable names:(.*)", re.MULTILINE | re.DOTALL)
-SearchVarNames2 = re.compile(r"(.*?)^\S", re.MULTILINE | re.DOTALL)
-SearchVarNames3 = re.compile(r"(\d+): (\w+)")
-OpCodeClasses = {
+CODE_CLASS = compile("0", "", "eval").__class__  # There's gotta be a better way!
+SEARCH_NUM_ARGS = re.compile(r"^Argument count:\s+(\d+)", re.MULTILINE)
+SEARCH_VAR_NAMES1 = re.compile(r"^Variable names:(.*)", re.MULTILINE | re.DOTALL)
+SEARCH_VAR_NAMES2 = re.compile(r"(.*?)^\S", re.MULTILINE | re.DOTALL)
+SEARCH_VAR_NAMES3 = re.compile(r"(\d+): (\w+)")
+OP_CODE_CLASSES = {
     "BINARY_ADD": math.BinaryAdd,
     "BINARY_MULTIPLY": math.BinaryMultiply,
     "BINARY_SLICE": data.BinarySlice,
@@ -77,7 +77,7 @@ OpCodeClasses = {
 }
 
 
-def code_to_codeblock(path: Path, code: CodeClass, sandbox: SandBox, module_dot_name: str,
+def code_to_codeblock(path: Path, code: CODE_CLASS, sandbox: SandBox, module_dot_name: str,
                       module: Optional[Module] = None) -> CodeBlock:
     code_block = CodeBlock()
     sandbox.playground.code_blocks_by_name[str(code)] = code_block
@@ -90,29 +90,29 @@ def code_to_codeblock(path: Path, code: CodeClass, sandbox: SandBox, module_dot_
 
     # Add instructions
     for instr in get_instructions(code):
-        line_class = OpCodeClasses[instr.opname]
+        line_class = OP_CODE_CLASSES[instr.opname]
         instr_obj = line_class(instr.starts_line, instr.offset, instr.opname, instr.arg, instr.argrepr)
         code_block.code_lines[instr.offset] = instr_obj
 
     # Number of arguments
     info_str = code_info(code)
-    match = SearchNumArgs.search(info_str)
+    match = SEARCH_NUM_ARGS.search(info_str)
     assert match
     code_block.num_params = int(match.group(1))
 
     # Argument names
-    match = SearchVarNames1.search(info_str)
+    match = SEARCH_VAR_NAMES1.search(info_str)
     if match:
         var_name_str = match.group(1)
-        match = SearchVarNames2.search(var_name_str)
+        match = SEARCH_VAR_NAMES2.search(var_name_str)
         if match:
             var_name_str = match.group(1)
-        var_name_dict = {int(index): name for index, name in SearchVarNames3.findall(var_name_str)}
+        var_name_dict = {int(index): name for index, name in SEARCH_VAR_NAMES3.findall(var_name_str)}
         code_block.param_names = [var_name_dict[index] for index in range(code_block.num_params)]
 
     # Grab other code blocks
     for constant in code.co_consts:
-        if isinstance(constant, CodeClass):
+        if isinstance(constant, CODE_CLASS):
             code_to_codeblock(path, constant, sandbox, module_dot_name, module)
 
     return code_block
