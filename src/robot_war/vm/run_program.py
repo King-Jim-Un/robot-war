@@ -5,7 +5,7 @@ from robot_war.exceptions import RobotWarSystemExit
 from robot_war.vm.built_ins import BUILT_INS
 from robot_war.vm.exec_context import SandBox, Playground
 from robot_war.vm.instructions.classes import LoadName
-from robot_war.vm.instructions.data import BuildList, LoadConst, BuildTuple, LoadFast, PopTop
+from robot_war.vm.instructions.data import BuildList, LoadConstant, BuildTuple, LoadFast, PopTop
 from robot_war.vm.instructions.flow_control import CallFunction, RaiseVarArgs
 from robot_war.vm.instructions.imports import LoadModuleFile1
 from robot_war.vm.source_functions import Function, CodeBlock
@@ -18,7 +18,7 @@ def run_program(source_file: Path, sandbox: Optional[SandBox] = None) -> Optiona
     code_block = CodeBlock({
         # LOAD_MODULE_FILE_1 wants two parameters: and empty module list, and a tuple of (module_name, source_path)
         0: BuildList(None, 0, "BUILD_LIST", 0, None),
-        2: LoadConst(None, 2, "LOAD_CONST", 0, "'__main__'"),
+        2: LoadConstant(None, 2, "LOAD_CONST", 0, "'__main__'"),
         4: LoadFast(None, 4, "LOAD_FAST", 0, "source_file"),
         6: BuildTuple(None, 6, "BUILD_TUPLE", 2, None),
         # Load module
@@ -27,7 +27,7 @@ def run_program(source_file: Path, sandbox: Optional[SandBox] = None) -> Optiona
         10: PopTop(None, 10, "POP_TOP", 0, None),  # Discard list of modules
         # Instantiate a SystemExit(0) exception
         12: LoadName(None, 12, "LOAD_NAME", 0, "SystemExit"),
-        14: LoadConst(None, 14, "LOAD_CONST", 1, "0"),
+        14: LoadConstant(None, 14, "LOAD_CONST", 1, "0"),
         16: CallFunction(None, 16, "CALL_FUNCTION", 1, None),
         # Raise exception
         18: RaiseVarArgs(None, 18, "RAISE_VARARGS", 1, None)  # Raise exception

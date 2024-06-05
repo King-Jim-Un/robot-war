@@ -16,10 +16,10 @@ LOG = logging.getLogger(__name__)
 
 @dataclass
 class ApiClass(GetName):
-    playground: Optional["Playground"] = None
+    _playground: Optional["Playground"] = None
 
     def get_name(self, name: str):
-        if name == "__init__":
+        if name.startswith("_"):
             raise KeyError(f"not going to return {name}")
         value = getattr(self.__class__, name)
         return ApiMethod(value) if callable(value) else value  # TODO: This is a little fragile and must be expanded later on

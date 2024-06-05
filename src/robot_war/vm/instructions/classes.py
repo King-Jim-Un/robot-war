@@ -11,7 +11,7 @@ except ImportError:
 LOG = logging.getLogger(__name__)
 
 
-class LoadAttr(CodeLine):
+class LoadAttribute(CodeLine):
     def exec(self, sandbox: SandBox):
         super().exec(sandbox)
         sandbox.push(sandbox.pop().get_attr(self.note))
@@ -63,7 +63,7 @@ class SetupAnnotations(CodeLine):
         sandbox.context.get_name_obj.name_dict["__annotations__"] = {}
 
 
-class StoreAttr(CodeLine):
+class StoreAttribute(CodeLine):
     def exec(self, sandbox: SandBox):
         super().exec(sandbox)
         obj = sandbox.pop()

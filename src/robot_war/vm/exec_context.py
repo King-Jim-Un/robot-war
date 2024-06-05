@@ -129,6 +129,7 @@ class SandBox:
             self.call_stack.append(FunctionContext(function, fast_stack, function.code_block.module))
 
         else:
+            assert function not in API_CLASSES, "API classes must be subclassed, do not instantiate as-is"
             if isinstance(function, ApiMethod) and args and isinstance(args[0], SourceInstance):
                 function = function.function
                 args = (self.playground.robot,) + args[1:]
@@ -142,10 +143,10 @@ class SandBox:
 
     def step(self):
         try:
-            context = self.context
-            instruction = context.function.code_block.code_lines[context.pc]
-            instruction.exec(self)
-            # context.function.code_block.code_lines[context.pc].exec(self)
+            # context = self.context
+            # instruction = context.function.code_block.code_lines[context.pc]
+            # instruction.exec(self)
+            self.context.function.code_block.code_lines[self.context.pc].exec(self)
         except ReturnException as rc:
             assert not self.call_stack.pop().data_stack, "Data stack wasn't empty"
             if self.call_stack:
@@ -171,7 +172,7 @@ class SandBox:
             class_list = list(parent_classes)
         elif num_api_parents == 1:
             assert self.playground.robot is None, "each VM can only instantiate a single robot"
-            robot = [cls(playground=self.playground) for cls in parent_classes if cls in API_CLASSES][0]
+            robot = [cls(_playground=self.playground) for cls in parent_classes if cls in API_CLASSES][0]
             class_list = [robot if cls in API_CLASSES else cls for cls in parent_classes]
             self.playground.set_robot(robot)
             LOG.debug("Instantiated robot %r", robot)

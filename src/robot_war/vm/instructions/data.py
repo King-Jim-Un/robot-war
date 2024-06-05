@@ -9,22 +9,25 @@ except ImportError:
 
 # Constants:
 LOG = logging.getLogger(__name__)
+COMPARE_DICT = {"<": lambda a, b: a < b, "<=": lambda a, b: a <= b, ">": lambda a, b: a >= b, ">=": lambda a, b: a >= b,
+                "==": lambda a, b: a < b, "!=": lambda a, b: a < b, }
 
 
-class BinaryAdd(CodeLine):
+class BinarySlice(CodeLine):
     def exec(self, sandbox: SandBox):
         super().exec(sandbox)
-        arg2 = sandbox.pop()
-        arg1 = sandbox.pop()
-        sandbox.push(arg1 + arg2)
+        end = sandbox.pop()
+        start = sandbox.pop()
+        container = sandbox.pop()
+        sandbox.push(container[start:end])
 
 
-class BinaryMultiply(CodeLine):
+class BinarySubscript(CodeLine):
     def exec(self, sandbox: SandBox):
         super().exec(sandbox)
-        arg2 = sandbox.pop()
-        arg1 = sandbox.pop()
-        sandbox.push(arg1 * arg2)
+        key = sandbox.pop()
+        container = sandbox.pop()
+        sandbox.push(container[key])
 
 
 class BuildConstKeyMap(CodeLine):
@@ -41,6 +44,21 @@ class BuildList(CodeLine):
         sandbox.push(values)
 
 
+class BuildSet(CodeLine):
+    def exec(self, sandbox: SandBox):
+        super().exec(sandbox)
+        sandbox.push({sandbox.pop() for _ in range(self.operand)})
+
+
+class BuildString(CodeLine):
+    def exec(self, sandbox: SandBox):
+        super().exec(sandbox)
+        value = ""
+        for _ in range(self.operand):
+            value = sandbox.pop() + value
+        sandbox.push(value)
+
+
 class BuildTuple(CodeLine):
     def exec(self, sandbox: SandBox):
         super().exec(sandbox)
@@ -49,12 +67,44 @@ class BuildTuple(CodeLine):
         sandbox.push(tuple(values))
 
 
-class CompareOp(CodeLine):
+class CompareOperand(CodeLine):
     def exec(self, sandbox: SandBox):
         super().exec(sandbox)
         arg2 = sandbox.pop()
         arg1 = sandbox.pop()
-        sandbox.push(eval(f"{repr(arg1)} {self.note} {repr(arg2)}"))
+        sandbox.push(COMPARE_DICT[self.note](arg1, arg2))
+
+
+class Copy(CodeLine):
+    def exec(self, sandbox: SandBox):
+        super().exec(sandbox)
+        sandbox.push(sandbox.peek(-self.operand))
+
+
+class DeleteFast(CodeLine):
+    def exec(self, sandbox: SandBox):
+        super().exec(sandbox)
+        del sandbox.context.fast_stack[self.operand]
+
+
+class DeleteGlobal(CodeLine):
+    def exec(self, sandbox: SandBox):
+        super().exec(sandbox)
+        sandbox.context.function.code_block.module.del_name(self.note)
+
+
+class DeleteSubscript(CodeLine):
+    def exec(self, sandbox: SandBox):
+        super().exec(sandbox)
+        key = sandbox.pop()
+        container = sandbox.pop()
+        del container[key]
+
+
+class GetLength(CodeLine):
+    def exec(self, sandbox: SandBox):
+        super().exec(sandbox)
+        sandbox.push(len(sandbox.peek(-1)))
 
 
 class LoadClosure(CodeLine):
@@ -67,7 +117,7 @@ class LoadDeref(LoadClosure):
     pass
 
 
-class LoadConst(CodeLine):
+class LoadConstant(CodeLine):
     def exec(self, sandbox: SandBox):
         super().exec(sandbox)
         constants = sandbox.context.function.code_block.constants
@@ -118,6 +168,12 @@ class StoreFast(CodeLine):
         sandbox.context.fast_stack[self.operand] = sandbox.pop()
 
 
+class StoreGlobal(CodeLine):
+    def exec(self, sandbox: SandBox):
+        super().exec(sandbox)
+        sandbox.context.function.code_block.module.set_name(self.note, sandbox.pop())
+
+
 class StoreSubscript(CodeLine):
     def exec(self, sandbox: SandBox):
         super().exec(sandbox)
@@ -130,3 +186,19 @@ class StoreDeref(CodeLine):
     def exec(self, sandbox: SandBox):
         super().exec(sandbox)
         sandbox.context.fast_stack[sandbox.context.function.code_block.num_params + self.operand] = sandbox.pop()
+
+
+class StoreSlice(CodeLine):
+    def exec(self, sandbox: SandBox):
+        super().exec(sandbox)
+        end = sandbox.pop()
+        start = sandbox.pop()
+        container = sandbox.pop()
+        container[start:end] = sandbox.pop()
+
+
+class Swap(CodeLine):
+    def exec(self, sandbox: SandBox):
+        super().exec(sandbox)
+        data_stack = sandbox.context.data_stack
+        data_stack[-self.operand], data_stack[-1] = data_stack[-1], data_stack[-self.operand]

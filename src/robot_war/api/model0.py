@@ -15,6 +15,7 @@ FIRE_PER_TICK = 10.0
 
 @dataclass
 class Robot(ApiClass):
+    # NOTE: START MEMBER NAMES WITH AN UNDERSCORE UNLESS IT'S OKAY FOR THE USER TO ACCESS THEM!
     position: Vector2 = Vector2(300.0, 200.0)
     facing: float = 0.0
 
@@ -46,7 +47,7 @@ class Robot(ApiClass):
 
     def shoot(self, distance):
         LOG.warning("shoot(%f)", distance)
-        game_engine = self.playground.game_engine
+        game_engine = self._playground.game_engine
         fireball = game_engine.create_sprite(game_engine.fireball_image, self.position, self.facing)
         stop = self.position + Vector2.from_polar((distance, self.facing))
 
