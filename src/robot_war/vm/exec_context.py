@@ -7,11 +7,9 @@ from robot_war.api import API_CLASSES
 from robot_war.exceptions import DontPushReturnValue, TerminalError, BlockThread
 from robot_war.vm.api_class import ApiClass, ApiMethod
 from robot_war.vm.get_name import GetName
-from robot_war.vm.instructions.classes import LoadName
-from robot_war.vm.instructions.data import LoadFast, PopTop
-from robot_war.vm.instructions.flow_control import ReturnException, CallFunction, ReturnValue
+from robot_war.vm.instructions.flow_control import ReturnException
 from robot_war.vm.source_class import SourceClass, SourceInstance, BoundMethod, Constructor
-from robot_war.vm.source_functions import CodeDict, Function, CodeBlock
+from robot_war.vm.source_functions import CodeDict, Function
 from robot_war.vm.source_module import Module
 
 # Types:
@@ -88,29 +86,24 @@ class SandBox:
                 # and the arguments we received.
                 init_func = function.get_name("__init__")
                 fast_stack = self.args_to_fast(init_func, init_func, instance, *args, **kwargs)
-                num_args = len(fast_stack) - 1  # Skipping __init__
+                num_args = len(fast_stack) - 2  # not counting init_func and instance
+                arg_names = ["init_func", "instance"] + [f"arg{index}" for index in range(num_args)]
 
                 # Create the wrapper function
-                code_block = CodeBlock(num_params=len(fast_stack))
-                wrapper = Function("__wrapper__", code_block)
-                ip = 0
+                with Function("__wrapper__", arg_names) as wrapper:
+                    # Load the parameters and call the __init__
+                    wrapper.LOAD_FAST("init_func")
+                    wrapper.LOAD_FAST("instance")
+                    for index in range(num_args):
+                        wrapper.LOAD_FAST(f"arg{index}")
+                    wrapper.CALL_FUNCTION(num_args)
 
-                def add(instruction):
-                    code_block.code_lines[instruction.offset] = instruction
-                    return instruction.offset + CODE_STEP
+                    # Discard __init__'s return value
+                    wrapper.POP_TOP()
 
-                # Load the parameters and call the __init__
-                ip = add(LoadName(None, ip, "LOAD_FAST", 0, "__init__"))
-                for index in range(num_args):
-                    ip = add(LoadFast(None, ip, "LOAD_FAST", index + 1, f"arg[{index}]"))
-                ip = add(CallFunction(None, ip, "CALL_FUNCTION", num_args, None))
-
-                # Discard __init__'s return value
-                ip = add(PopTop(None, ip, "POP_TOP", 0, None))
-
-                # Return our instance
-                ip = add(LoadFast(None, ip, "LOAD_FAST", 1, "instance"))
-                add(ReturnValue(None, ip, "RETURN_VALUE", 0, None))
+                    # Return our instance
+                    wrapper.LOAD_FAST("instance")
+                    wrapper.RETURN_VALUE()
 
                 self.call_stack.append(FunctionContext(wrapper, fast_stack, instance))
             except KeyError:
@@ -143,10 +136,10 @@ class SandBox:
 
     def step(self):
         try:
-            # context = self.context
-            # instruction = context.function.code_block.code_lines[context.pc]
-            # instruction.exec(self)
-            self.context.function.code_block.code_lines[self.context.pc].exec(self)
+            context = self.context
+            instruction = context.function.code_block.code_lines[context.pc]
+            instruction.exec(self)
+            # self.context.function.code_block.code_lines[self.context.pc].exec(self)
         except ReturnException as rc:
             assert not self.call_stack.pop().data_stack, "Data stack wasn't empty"
             if self.call_stack:
@@ -172,10 +165,9 @@ class SandBox:
             class_list = list(parent_classes)
         elif num_api_parents == 1:
             assert self.playground.robot is None, "each VM can only instantiate a single robot"
-            robot = [cls(_playground=self.playground) for cls in parent_classes if cls in API_CLASSES][0]
-            class_list = [robot if cls in API_CLASSES else cls for cls in parent_classes]
-            self.playground.set_robot(robot)
-            LOG.debug("Instantiated robot %r", robot)
+            class_list = [parent_classes[0](_playground=self.playground)]
+            self.playground.set_robot(class_list[0])
+            LOG.debug("Instantiated robot %r", class_list[0])
         else:
             raise TerminalError("Robots can only inherit from a single API class")
         source_class = SourceClass({"__name__": name}, class_list, function.code_block.module)
@@ -186,17 +178,16 @@ class SandBox:
         # A second complication is function, which is just a regular function, so its namespace is module. We want to
         # use the class's namespace. To specify the right namespace, we'll create a temporary Constructor object.
         constructor = Constructor(source_class=source_class, **function.__dict__)
-        wrapper = Function("__wrapper__", CodeBlock({
+        with Function("__wrapper__", ["creator", "source_class"]) as wrapper:
             # Call creation function
-            0: LoadFast(None, 0, "LOAD_FAST", 0, "creation"),
-            2: CallFunction(None, 2, "CALL_FUNCTION", 0, None),
+            wrapper.LOAD_FAST("creator")
+            wrapper.CALL_FUNCTION(0)
             # Discard result
-            4: PopTop(None, 4, "POP_TOP", 0, None),
+            wrapper.POP_TOP()
             # Return class
-            6: LoadFast(None, 6, "LOAD_FAST", 1, "source_class"),
-            8: ReturnValue(None, 8, "RETURN_VALUE", 0, None)
-        }, num_params=2))
-        self.call_stack.append(FunctionContext(wrapper, {0: constructor, 1: source_class}, source_class))
+            wrapper.LOAD_FAST("source_class")
+            wrapper.RETURN_VALUE()
+        self.call_stack.append(wrapper.function_context(source_class, constructor, source_class))
         raise DontPushReturnValue()
 
     def block_thread(self, block_thread: BlockThread):

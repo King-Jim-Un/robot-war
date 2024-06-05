@@ -38,7 +38,7 @@ def run_program(source_file: Path, sandbox: Optional[SandBox] = None) -> Optiona
         playground = Playground(source_file.parent)
         sandbox = SandBox(playground)
         playground.sandboxes = [sandbox]
-    sandbox.call_function(Function("__run_program__", code_block), source_file)  # DO NOT SAVE FUNCTION IN NAMES
+    sandbox.call_function(Function("__run_program__", code_block=code_block), source_file)  # DO NOT SAVE FUNCTION IN NAMES
     return playground
 
 

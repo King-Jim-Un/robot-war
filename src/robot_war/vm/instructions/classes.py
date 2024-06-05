@@ -43,7 +43,7 @@ class MakeFunction(CodeLine):
         name = sandbox.pop()
         code_block = sandbox.pop()
         from robot_war.vm.source_functions import Function
-        function = Function(name, code_block)
+        function = Function(name, code_block=code_block)
         if self.operand & 0x01:
             function.default_args = sandbox.pop()
         if self.operand & 0x02:
