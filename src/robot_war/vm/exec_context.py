@@ -7,11 +7,9 @@ from robot_war.api import API_CLASSES
 from robot_war.exceptions import DontPushReturnValue, TerminalError, BlockThread
 from robot_war.vm.api_class import ApiClass, ApiMethod
 from robot_war.vm.get_name import GetName
-from robot_war.vm.instructions.classes import LoadName
-from robot_war.vm.instructions.data import LoadFast, PopTop
-from robot_war.vm.instructions.flow_control import ReturnException, CallFunction, ReturnValue
+from robot_war.vm.instructions.flow_control import ReturnException
 from robot_war.vm.source_class import SourceClass, SourceInstance, BoundMethod, Constructor
-from robot_war.vm.source_functions import CodeDict, Function, CodeBlock
+from robot_war.vm.source_functions import CodeDict, Function
 from robot_war.vm.source_module import Module
 
 # Types:
@@ -88,29 +86,24 @@ class SandBox:
                 # and the arguments we received.
                 init_func = function.get_name("__init__")
                 fast_stack = self.args_to_fast(init_func, init_func, instance, *args, **kwargs)
-                num_args = len(fast_stack) - 1  # Skipping __init__
+                num_args = len(fast_stack) - 2  # not counting init_func and instance
+                arg_names = ["init_func", "instance"] + [f"arg{index}" for index in range(num_args)]
 
                 # Create the wrapper function
-                code_block = CodeBlock(num_params=len(fast_stack))
-                wrapper = Function("__wrapper__", code_block=code_block)
-                ip = 0
+                with Function("__wrapper__", arg_names) as wrapper:
+                    # Load the parameters and call the __init__
+                    wrapper.LOAD_FAST("init_func")
+                    wrapper.LOAD_FAST("instance")
+                    for index in range(num_args):
+                        wrapper.LOAD_FAST(f"arg{index}")
+                    wrapper.CALL_FUNCTION(num_args)
 
-                def add(instruction):
-                    code_block.code_lines[instruction.offset] = instruction
-                    return instruction.offset + CODE_STEP
+                    # Discard __init__'s return value
+                    wrapper.POP_TOP()
 
-                # Load the parameters and call the __init__
-                ip = add(LoadName(None, ip, "LOAD_FAST", 0, "__init__"))
-                for index in range(num_args):
-                    ip = add(LoadFast(None, ip, "LOAD_FAST", index + 1, f"arg[{index}]"))
-                ip = add(CallFunction(None, ip, "CALL_FUNCTION", num_args, None))
-
-                # Discard __init__'s return value
-                ip = add(PopTop(None, ip, "POP_TOP", 0, None))
-
-                # Return our instance
-                ip = add(LoadFast(None, ip, "LOAD_FAST", 1, "instance"))
-                add(ReturnValue(None, ip, "RETURN_VALUE", 0, None))
+                    # Return our instance
+                    wrapper.LOAD_FAST("instance")
+                    wrapper.RETURN_VALUE()
 
                 self.call_stack.append(FunctionContext(wrapper, fast_stack, instance))
             except KeyError:

@@ -30,40 +30,29 @@ class ImportName(CodeLine):
         assert level == 0, "TODO: non-zero level imports"
         parts = self.note.split(".")
 
-        from robot_war.vm.exec_context import CODE_STEP
-        from robot_war.vm.instructions.data import LoadFast, LoadConstant, LoadSubscript
-        from robot_war.vm.instructions.flow_control import ReturnValue
-        from robot_war.vm.source_functions import Function, CodeBlock
-        code_block = CodeBlock()
-        ip = 0
-
-        def add(instruction):
-            code_block.code_lines[instruction.offset] = instruction
-            return instruction.offset + CODE_STEP
-
         if parts[0] == ROBOT_WAR:
             self.load_api(sandbox, parts)
         else:
+            from robot_war.vm.source_functions import Function
             modules_loaded, tuples_to_load = self.find_load_files(sandbox, parts)
-            ip = add(LoadFast(None, ip, "LOAD_FAST", 0, "modules_loaded"))
-            link_up = bool(modules_loaded)
-            for index in range(len(tuples_to_load)):
-                ip = add(LoadFast(None, ip, "LOAD_FAST", index + 1, f"tuples_to_load[{index}]"))
-                ip = add(LoadModuleFile1(None, ip, "LOAD_MODULE_FILE_1", 0, None))
-                if link_up:
-                    ip = add(LoadFast(None, ip, "LOAD_FAST", index + 1, f"tuples_to_load[{index}]"))
-                    ip = add(LoadConstant(None, ip, "LOAD_CONST", 0, "0"))
-                    ip = add(LoadSubscript(None, ip, "LOAD_SUBSCR", 0, None))
-                    ip = add(LoadModuleFile2(None, ip, "LOAD_MODULE_FILE_2", 0, None))
-                    link_up = True
+            arg_names = ["modules_loaded"] + [f"to_load{index}" for index in range(len(tuples_to_load))]
+            with Function("__import_name__", arg_names) as import_name:
+                import_name.LOAD_FAST("modules_loaded")
+                link_up = bool(modules_loaded)
+                for index in range(len(tuples_to_load)):
+                    import_name.LOAD_FAST(f"to_load{index}")
+                    import_name.LOAD_MODULE_FILE_1()
+                    if link_up:
+                        import_name.LOAD_FAST(f"to_load{index}")
+                        import_name.LOAD_CONST("0")
+                        import_name.LOAD_SUBSCR()
+                        import_name.LOAD_MODULE_FILE_2()
+                        link_up = True
 
-            if from_list is None:
-                ip = add(LoadConstant(None, ip, "LOAD_CONST", 0, "0"))
-            else:
-                ip = add(LoadConstant(None, ip, "LOAD_CONST", 1, "-1"))
-            ip = add(LoadSubscript(None, ip, "LOAD_SUBSCR", 0, None))
-            add(ReturnValue(None, ip, "RETURN_VALUE", 0, None))
-            sandbox.call_function(Function("__import_name__", code_block=code_block), modules_loaded, *tuples_to_load)
+                import_name.LOAD_CONST("0" if from_list is None else "-1")
+                import_name.LOAD_SUBSCR()
+                import_name.RETURN_VALUE()
+            sandbox.call_function(import_name, modules_loaded, *tuples_to_load)
             # TODO: Need to be some sort of mechanism to verify that we actually imported the name
 
     @staticmethod
@@ -152,19 +141,16 @@ class LoadModuleFile1(CodeLine):  # Not in parser
         from robot_war.vm.source_module import Module
         module_dot_name, file_path = sandbox.pop()
         module_list: List[Module] = sandbox.pop()
-        from robot_war.vm.source_functions import Function, CodeBlock
-        from robot_war.vm.instructions.data import PopTop, LoadFast
-        from robot_war.vm.instructions.flow_control import ReturnValue
-        launcher_block = CodeBlock({
+        from robot_war.vm.source_functions import Function
+        with Function("__load_module_file_1__", ["module_list"]) as load:
             # Note that we're not putting a call on this stack since we don't want this to be user-callable!
-            0: PopTop(None, 0, "POP_TOP", 0, None),  # Discard the None that will be returned by importing the module
-            2: LoadFast(None, 2, "LOAD_FAST", 0, "module_list"),  # Return the module list we create in advance
-            4: ReturnValue(None, 4, "RETURN_VALUE", 0, None)  # This will do the push
-        })
+            load.POP_TOP()  # Discard the None that will be returned by importing the module
+            load.LOAD_FAST("module_list")  # Return the module list we create in advance
+            load.RETURN_VALUE()  # This will do the push
         from robot_war.vm.parse_source_file import parse_source_file
         module_block = parse_source_file(sandbox, module_dot_name, file_path)
         module_list.append(sandbox.playground.all_modules[module_dot_name])
-        sandbox.call_function(Function("__load_module_file_1__", code_block=launcher_block), module_list)
+        sandbox.call_function(load, module_list)
         sandbox.call_function(Function(module_dot_name, code_block=module_block))
 
 
