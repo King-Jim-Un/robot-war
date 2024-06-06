@@ -4,7 +4,7 @@ from dis import get_instructions, code_info
 import logging
 from pathlib import Path
 import re
-from typing import Optional
+from typing import Optional, Callable
 
 from robot_war.vm.built_ins import BUILT_INS
 from robot_war.vm.instructions import classes, data, flow_control, imports, math, misc
@@ -22,6 +22,9 @@ SEARCH_VAR_NAMES3 = re.compile(r"(\d+): (\w+)")
 OP_CODE_CLASSES = {
     "BINARY_ADD": math.BinaryAdd,
     "BINARY_MULTIPLY": math.BinaryMultiply,
+    "BINARY_SUBTRACT": math.BinarySubtract,
+    "BINARY_FLOOR_DIVIDE": math.BinaryFloorDivide,
+    "BINARY_TRUE_DIVIDE": math.BinaryTrueDivide,
     "BINARY_SLICE": data.BinarySlice,
     "BINARY_SUBSCR": data.BinarySubscript,
     "BUILD_CONST_KEY_MAP": data.BuildConstKeyMap,
@@ -89,10 +92,7 @@ def code_to_codeblock(path: Path, code: CODE_CLASS, sandbox: SandBox, module_dot
     code_block.module = module
 
     # Add instructions
-    for instr in get_instructions(code):
-        line_class = OP_CODE_CLASSES[instr.opname]
-        instr_obj = line_class(instr.starts_line, instr.offset, instr.opname, instr.arg, instr.argrepr)
-        code_block.code_lines[instr.offset] = instr_obj
+    code_block.set_function(code)
 
     # Number of arguments
     info_str = code_info(code)

@@ -27,6 +27,30 @@ class BinaryMultiply(CodeLine):
         sandbox.push(arg1 * arg2)
 
 
+class BinarySubtract(CodeLine):
+    def exec(self, sandbox: SandBox):
+        super().exec(sandbox)
+        arg2 = sandbox.pop()
+        arg1 = sandbox.pop()
+        sandbox.push(arg1 - arg2)
+
+
+class BinaryFloorDivide(CodeLine):
+    def exec(self, sandbox: SandBox):
+        super().exec(sandbox)
+        arg2 = sandbox.pop()
+        arg1 = sandbox.pop()
+        sandbox.push(arg1 // arg2)
+
+
+class BinaryTrueDivide(CodeLine):
+    def exec(self, sandbox: SandBox):
+        super().exec(sandbox)
+        arg2 = sandbox.pop()
+        arg1 = sandbox.pop()
+        sandbox.push(arg1 / arg2)
+
+
 class ContainsOperand(CodeLine):
     def exec(self, sandbox: SandBox):
         super().exec(sandbox)

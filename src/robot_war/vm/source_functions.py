@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
+from dis import get_instructions
 import logging
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, Callable
 
 from robot_war.vm.instructions import CodeLine
 
@@ -28,6 +29,13 @@ class CodeBlock:
     def __repr__(self):
         module_name = None if self.module is None else self.module.name
         return f"CodeBlock(module={module_name}, {len(self.code_lines)} lines, {len(self.constants)} constants)"
+
+    def set_function(self, function: Callable):
+        from robot_war.vm.parse_source_file import OP_CODE_CLASSES
+        for instr in get_instructions(function):
+            line_class = OP_CODE_CLASSES[instr.opname]
+            instr_obj = line_class(instr.starts_line, instr.offset, instr.opname, instr.arg, instr.argrepr)
+            self.code_lines[instr.offset] = instr_obj
 
 
 @dataclass
