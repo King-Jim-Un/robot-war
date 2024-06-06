@@ -1,11 +1,10 @@
 """Parse a source file into a module"""
 
-from dis import get_instructions, code_info
 import logging
 from pathlib import Path
-import re
-from typing import Optional, Callable
+from typing import Optional
 
+from robot_war.constants import CODE_CLASS
 from robot_war.vm.built_ins import BUILT_INS
 from robot_war.vm.instructions import classes, data, flow_control, imports, math, misc
 from robot_war.vm.exec_context import SandBox
@@ -14,11 +13,6 @@ from robot_war.vm.source_module import Module
 
 # Constants:
 LOG = logging.getLogger(__name__)
-CODE_CLASS = compile("0", "", "eval").__class__  # There's gotta be a better way!
-SEARCH_NUM_ARGS = re.compile(r"^Argument count:\s+(\d+)", re.MULTILINE)
-SEARCH_VAR_NAMES1 = re.compile(r"^Variable names:(.*)", re.MULTILINE | re.DOTALL)
-SEARCH_VAR_NAMES2 = re.compile(r"(.*?)^\S", re.MULTILINE | re.DOTALL)
-SEARCH_VAR_NAMES3 = re.compile(r"(\d+): (\w+)")
 OP_CODE_CLASSES = {
     "BINARY_ADD": math.BinaryAdd,
     "BINARY_MULTIPLY": math.BinaryMultiply,
@@ -85,7 +79,7 @@ def code_to_codeblock(path: Path, code: CODE_CLASS, sandbox: SandBox, module_dot
     code_block = CodeBlock()
     sandbox.playground.code_blocks_by_name[str(code)] = code_block
     if module is None:
-        module = Module(module_dot_name, code_block, name_dict=dict(BUILT_INS), path=path,
+        module = Module(module_dot_name, code_block=code_block, name_dict=dict(BUILT_INS), path=path,
                         dot_path=module_dot_name.split("."))
         module.name_dict["__name__"] = module_dot_name
         sandbox.playground.all_modules[module_dot_name] = module
@@ -93,22 +87,6 @@ def code_to_codeblock(path: Path, code: CODE_CLASS, sandbox: SandBox, module_dot
 
     # Add instructions
     code_block.set_function(code)
-
-    # Number of arguments
-    info_str = code_info(code)
-    match = SEARCH_NUM_ARGS.search(info_str)
-    assert match
-    code_block.num_params = int(match.group(1))
-
-    # Argument names
-    match = SEARCH_VAR_NAMES1.search(info_str)
-    if match:
-        var_name_str = match.group(1)
-        match = SEARCH_VAR_NAMES2.search(var_name_str)
-        if match:
-            var_name_str = match.group(1)
-        var_name_dict = {int(index): name for index, name in SEARCH_VAR_NAMES3.findall(var_name_str)}
-        code_block.param_names = [var_name_dict[index] for index in range(code_block.num_params)]
 
     # Grab other code blocks
     for constant in code.co_consts:

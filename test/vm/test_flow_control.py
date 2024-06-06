@@ -18,3 +18,8 @@ def test_call():
 @compare_in_vm([func])
 def test_call_kw():
     return func(b=1, a=2) + 3
+
+
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.DEBUG)
+    test_call_kw()

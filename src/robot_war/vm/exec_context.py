@@ -63,7 +63,8 @@ class SandBox:
         arg_list = [None] * function.code_block.num_params
 
         # Default values
-        arg_list = arg_list[:-len(function.default_args)] + list(function.default_args)
+        if function.default_args:
+            arg_list = arg_list[:-len(function.default_args)] + list(function.default_args)
 
         # Specified values & closure
         arg_list = list(args) + arg_list[len(args):] + list(function.closure)

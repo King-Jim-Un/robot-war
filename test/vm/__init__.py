@@ -15,10 +15,11 @@ def compare_in_vm(function, module=None):
     def wrapper():
         standard_return = function()
         LOG.warning("return value in standard python: %r", standard_return)
-        code_block = CodeBlock(module=module)
-        code_block.set_function(function)
-        sandbox = SandBox(None)
-        sandbox.call_function(Function(function.__name__, code_block=code_block))
+        cb = CodeBlock(module=module)
+        cb.set_function(function)
+        sandbox = SandBox(None)  # noqa
+        sandbox.call_function(Function(function.__name__, code_block=cb))
+        vm_return = Exception
         try:
             exec_through(sandbox)
         except ReturnException as ret:
@@ -30,7 +31,7 @@ def compare_in_vm(function, module=None):
         for func in function:
             code_block = CodeBlock(module=module)
             code_block.set_function(func)
-            module.set_name(func.__name__, Function(func.__name__, code_block=code_block))
+            module.set_name(func.__name__, Function(func.__name__, code_block=code_block, arg_names=code_block.param_names))
         return lambda f: compare_in_vm(f, module)
     else:
         return wrapper
