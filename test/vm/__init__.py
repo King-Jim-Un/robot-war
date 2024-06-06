@@ -1,37 +1,35 @@
 from dis import dis
 import logging
+from typing import Optional
 
 from robot_war.exceptions import ReturnException
 from robot_war.vm.exec_context import SandBox
 from robot_war.vm.run_program import exec_through
-from robot_war.vm.source_functions import CodeBlock, Function
 from robot_war.vm.source_module import Module
 
 # Constants:
 LOG = logging.getLogger(__name__)
 
 
-def compare_in_vm(function, module=None):
+def compare_in_vm(function, module: Optional[Module] = None):
+    if module is None:
+        module = Module("module")
+
     def wrapper():
-        standard_return = function()
-        LOG.warning("return value in standard python: %r", standard_return)
-        cb = CodeBlock(module=module)
-        cb.set_function(function)
+        module.add_standard_python_function(function)
+
         sandbox = SandBox(None)  # noqa
-        sandbox.call_function(Function(function.__name__, code_block=cb))
-        vm_return = Exception
+        sandbox.call_function(module.get_name(function.__name__))
         try:
             exec_through(sandbox)
         except ReturnException as ret:
             vm_return = ret.value
-        assert standard_return == vm_return
+            standard_return = function()
+            assert standard_return == vm_return
 
     if isinstance(function, list):
-        module = Module("module")
         for func in function:
-            code_block = CodeBlock(module=module)
-            code_block.set_function(func)
-            module.set_name(func.__name__, Function(func.__name__, code_block=code_block, arg_names=code_block.param_names))
+            module.add_standard_python_function(func)
         return lambda f: compare_in_vm(f, module)
     else:
         return wrapper

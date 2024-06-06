@@ -2,14 +2,10 @@
 
 import logging
 from pathlib import Path
-from typing import Optional
 
-from robot_war.constants import CODE_CLASS
-from robot_war.vm.built_ins import BUILT_INS
 from robot_war.vm.instructions import classes, data, flow_control, imports, math, misc
 from robot_war.vm.exec_context import SandBox
 from robot_war.vm.source_functions import CodeBlock
-from robot_war.vm.source_module import Module
 
 # Constants:
 LOG = logging.getLogger(__name__)
@@ -72,28 +68,6 @@ OP_CODE_CLASSES = {
     "UNARY_NEGATIVE": math.UnaryNegative,
     "UNARY_NOT": math.UnaryNot
 }
-
-
-def code_to_codeblock(path: Path, code: CODE_CLASS, sandbox: SandBox, module_dot_name: str,
-                      module: Optional[Module] = None) -> CodeBlock:
-    code_block = CodeBlock()
-    sandbox.playground.code_blocks_by_name[str(code)] = code_block
-    if module is None:
-        module = Module(module_dot_name, code_block=code_block, name_dict=dict(BUILT_INS), path=path,
-                        dot_path=module_dot_name.split("."))
-        module.name_dict["__name__"] = module_dot_name
-        sandbox.playground.all_modules[module_dot_name] = module
-    code_block.module = module
-
-    # Add instructions
-    code_block.set_function(code)
-
-    # Grab other code blocks
-    for constant in code.co_consts:
-        if isinstance(constant, CODE_CLASS):
-            code_to_codeblock(path, constant, sandbox, module_dot_name, module)
-
-    return code_block
 
 
 def parse_source_file(sandbox: SandBox, module_dot_name: str, file_path: Path) -> CodeBlock:

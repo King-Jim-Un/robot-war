@@ -37,7 +37,6 @@ class FunctionContext:
 class Playground:
     root_path: Path
     all_modules: Dict[str, Module] = field(default_factory=dict)
-    code_blocks_by_name: CodeDict = field(default_factory=dict)
     sandboxes: List["SandBox"] = field(default_factory=list)
     robot: Optional[ApiClass] = None
 
