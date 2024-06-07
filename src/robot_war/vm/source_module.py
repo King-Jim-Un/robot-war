@@ -7,6 +7,7 @@ import re
 from typing import Optional, List, Callable
 
 from robot_war.constants import CODE_CLASS
+from robot_war.vm.built_ins import BUILT_INS
 from robot_war.vm.get_name import GetName
 from robot_war.vm.source_functions import Function, CodeBlock
 
@@ -23,6 +24,10 @@ class Module(GetName, Function):
     path: Optional[Path] = None
     dot_path: List[str] = field(default_factory=list)  # ["animal", "feline", "cat"] means: import animal.feline.cat
 
+    def __post_init__(self):
+        self.name_dict["__name__"] = self.name
+        self.name_dict.update(BUILT_INS)
+
     def __repr__(self):
         return f"Module({self.name}, {len(self.name_dict)} names)"
 
@@ -35,8 +40,12 @@ class Module(GetName, Function):
     def add_source_code(self, source_code: str) -> Function:
         return self.add_code(compile(source_code, str(self.path), "exec"))
 
+    def read_source_file(self, path: Path) -> Function:
+        with path.open("rt") as file_obj:
+            return self.add_source_code(file_obj.read())
+
     def add_code(self, code: CODE_CLASS) -> Function:
-        from robot_war.vm.parse_source_file import OP_CODE_CLASSES
+        from robot_war.vm.instructions.op_code_dict import OP_CODE_CLASSES
 
         # Code block
         code_block = CodeBlock(module=self)

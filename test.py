@@ -4,7 +4,7 @@ from pathlib import Path
 import pygame
 from typing import Dict, Optional, Generator, List
 
-from robot_war.exceptions import RobotWarSystemExit, BlockThread
+from robot_war.exceptions import RobotWarSystemExit, BlockThread, ReturnException
 from robot_war.vm.api_class import ApiClass
 from robot_war.vm.exec_context import Playground, SandBox
 from robot_war.vm.source_module import Module
@@ -118,19 +118,15 @@ class RobotWarEngine(GameEngine):
         self.robot_image = pygame.transform.scale_by(pygame.image.load(ROBOT_IMAGE_FILENAME), 0.25)
         self.fireball_image = pygame.transform.scale_by(pygame.image.load(FIREBALL_IMAGE_FILENAME), 0.2)
 
-        # Note that run_program doesn't block while the program runs. It loads a program into the VM and the execution
-        # must be advanced by steps or by calling exec_through()
+        # Note that call_function doesn't block while the program runs. It loads a program into the VM and the execution
+        # must be advanced by steps in backend()
         self.playground = MyPlayground(USER_FILENAME, game_engine=self)
         sandbox = MySandbox(self.playground)
         self.playground.sandboxes = [sandbox]
         self.workers: List[BlockGenerator] = []
         module = Module("__main__")
-        with USER_FILENAME.open("rt") as file_obj:
-            source = file_obj.read()
-        sandbox.call_function(module.add_source_code(source))
+        sandbox.call_function(module.read_source_file(USER_FILENAME))
         self.user_running = True
-        while True:
-            sandbox.step()
 
     def paint_ui(self):
         self.screen.fill("slateblue4")
@@ -141,7 +137,7 @@ class RobotWarEngine(GameEngine):
             for sandbox in self.playground.sandboxes:
                 try:
                     sandbox.step()
-                except RobotWarSystemExit:
+                except (RobotWarSystemExit, ReturnException):
                     self.user_running = False
 
         index = 0
@@ -180,5 +176,5 @@ def main():
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
-    # logging.getLogger("robot_war.vm.instructions").setLevel(logging.WARNING)
+    logging.getLogger("robot_war.vm.instructions").setLevel(logging.WARNING)
     main()

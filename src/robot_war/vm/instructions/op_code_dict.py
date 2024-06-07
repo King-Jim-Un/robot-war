@@ -1,14 +1,7 @@
-"""Parse a source file into a module"""
-
-import logging
-from pathlib import Path
+"""Opcode dictionary"""
 
 from robot_war.vm.instructions import classes, data, flow_control, imports, math, misc
-from robot_war.vm.exec_context import SandBox
-from robot_war.vm.source_functions import CodeBlock
 
-# Constants:
-LOG = logging.getLogger(__name__)
 OP_CODE_CLASSES = {
     "BINARY_ADD": math.BinaryAdd,
     "BINARY_MULTIPLY": math.BinaryMultiply,
@@ -68,12 +61,3 @@ OP_CODE_CLASSES = {
     "UNARY_NEGATIVE": math.UnaryNegative,
     "UNARY_NOT": math.UnaryNot
 }
-
-
-def parse_source_file(sandbox: SandBox, module_dot_name: str, file_path: Path) -> CodeBlock:
-    # Load source file
-    with file_path.open("rt") as file_obj:
-        source = file_obj.read()
-
-    # Compile the source
-    return code_to_codeblock(file_path, compile(source, str(file_obj), "exec"), sandbox, module_dot_name)

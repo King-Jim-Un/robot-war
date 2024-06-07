@@ -4,12 +4,12 @@ from pathlib import Path
 from typing import List, Any, Dict, Optional
 
 from robot_war.api import API_CLASSES
-from robot_war.exceptions import DontPushReturnValue, TerminalError, BlockThread
+from robot_war.exceptions import DontPushReturnValue, TerminalError, BlockThread, RobotWarSystemExit
 from robot_war.vm.api_class import ApiClass, ApiMethod
 from robot_war.vm.get_name import GetName
 from robot_war.vm.instructions.flow_control import ReturnException
 from robot_war.vm.source_class import SourceClass, SourceInstance, BoundMethod, Constructor
-from robot_war.vm.source_functions import CodeDict, Function
+from robot_war.vm.source_functions import Function
 from robot_war.vm.source_module import Module
 
 # Types:
@@ -150,6 +150,13 @@ class SandBox:
                 self.push(rc.value)
             else:
                 raise
+
+    def exec_through(self) -> int:
+        try:
+            while True:
+                self.step()
+        except RobotWarSystemExit as rc:
+            return rc.return_code
 
     def next(self):
         self.context.pc += CODE_STEP

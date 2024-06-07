@@ -4,7 +4,6 @@ from typing import Optional
 
 from robot_war.exceptions import ReturnException
 from robot_war.vm.exec_context import SandBox
-from robot_war.vm.run_program import exec_through
 from robot_war.vm.source_module import Module
 
 # Constants:
@@ -21,7 +20,7 @@ def compare_in_vm(function, module: Optional[Module] = None):
         sandbox = SandBox(None)  # noqa
         sandbox.call_function(module.get_name(function.__name__))
         try:
-            exec_through(sandbox)
+            sandbox.exec_through()
         except ReturnException as ret:
             vm_return = ret.value
             standard_return = function()

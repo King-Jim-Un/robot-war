@@ -50,7 +50,7 @@ class ConstMember:
 
     def __call__(self, note: str):
         from robot_war.vm.exec_context import CODE_STEP
-        from robot_war.vm.parse_source_file import OP_CODE_CLASSES
+        from robot_war.vm.instructions.op_code_dict import OP_CODE_CLASSES
         code_lines = self.function.code_block.code_lines
         offset = len(code_lines) * CODE_STEP
         if note not in self.function.constants:
@@ -68,7 +68,7 @@ class FastMember:
 
     def __call__(self, fast: str) -> int:
         from robot_war.vm.exec_context import CODE_STEP
-        from robot_war.vm.parse_source_file import OP_CODE_CLASSES
+        from robot_war.vm.instructions.op_code_dict import OP_CODE_CLASSES
         code_lines = self.function.code_block.code_lines
         offset = len(code_lines) * CODE_STEP
         if fast not in self.function.arg_names:
@@ -86,7 +86,7 @@ class NoteMember:
 
     def __call__(self, note: str) -> int:
         from robot_war.vm.exec_context import CODE_STEP
-        from robot_war.vm.parse_source_file import OP_CODE_CLASSES
+        from robot_war.vm.instructions.op_code_dict import OP_CODE_CLASSES
         code_lines = self.function.code_block.code_lines
         offset = len(code_lines) * CODE_STEP
         instr_class = OP_CODE_CLASSES[self.name]
@@ -106,7 +106,7 @@ class OperandMember:
 
     def __call__(self, operand: int = 0) -> int:
         from robot_war.vm.exec_context import CODE_STEP
-        from robot_war.vm.parse_source_file import OP_CODE_CLASSES
+        from robot_war.vm.instructions.op_code_dict import OP_CODE_CLASSES
         code_lines = self.function.code_block.code_lines
         offset = len(code_lines) * CODE_STEP
         instr_class = OP_CODE_CLASSES[self.name]
