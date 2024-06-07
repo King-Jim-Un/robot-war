@@ -29,10 +29,13 @@ class Module(GetName, Function):
     def get_method(self, name: str):
         return self.get_name(name)
 
-    def add_standard_python_function(self, standard_python_function: Callable):
-        self.add_code(compile(getsource(standard_python_function), str(self.path), "exec"))
+    def add_standard_python_function(self, standard_python_function: Callable) -> Function:
+        return self.add_source_code(getsource(standard_python_function))
 
-    def add_code(self, code: CODE_CLASS):
+    def add_source_code(self, source_code: str) -> Function:
+        return self.add_code(compile(source_code, str(self.path), "exec"))
+
+    def add_code(self, code: CODE_CLASS) -> Function:
         from robot_war.vm.parse_source_file import OP_CODE_CLASSES
 
         # Code block
@@ -41,7 +44,7 @@ class Module(GetName, Function):
             line_class = OP_CODE_CLASSES[instr.opname]
             instr_obj = line_class(instr.starts_line, instr.offset, instr.opname, instr.arg, instr.argrepr)
             code_block.code_lines[instr.offset] = instr_obj
-        # self.set_name(str(code), code_block)
+        self.set_name(str(code), code_block)  # save code block
 
         # Number of arguments
         info_str = code_info(code)
@@ -60,9 +63,12 @@ class Module(GetName, Function):
             code_block.param_names = [var_name_dict[index] for index in range(code_block.num_params)]
 
         # Function
-        self.set_name(code.co_name, Function(code.co_name, code_block.param_names, code_block))
+        function = Function(code.co_name, code_block.param_names, code_block)
+        self.set_name(code.co_name, function)  # save function (code block wrapped up for use in Python)
 
         # Grab other code blocks
         for constant in code.co_consts:
             if isinstance(constant, CODE_CLASS):
                 self.add_code(constant)
+
+        return function

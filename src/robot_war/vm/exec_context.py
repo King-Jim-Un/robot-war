@@ -33,7 +33,7 @@ class FunctionContext:
     pc: int = 0
 
 
-@dataclass
+@dataclass(repr=False)
 class Playground:
     root_path: Path
     all_modules: Dict[str, Module] = field(default_factory=dict)
@@ -45,6 +45,10 @@ class Playground:
 
     def unset_robot(self):
         self.robot = None
+
+    def __repr__(self):
+        return (f"Playground({str(self.root_path)}, {len(self.all_modules)} modules, {len(self.sandboxes)} sandboxes, "
+                f"{self.robot}")
 
 
 @dataclass

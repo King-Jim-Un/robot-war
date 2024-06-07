@@ -7,7 +7,7 @@ from typing import Dict, Optional, Generator, List
 from robot_war.exceptions import RobotWarSystemExit, BlockThread
 from robot_war.vm.api_class import ApiClass
 from robot_war.vm.exec_context import Playground, SandBox
-from robot_war.vm.run_program import run_program
+from robot_war.vm.source_module import Module
 
 # Constants:
 LOG = logging.getLogger(__name__)
@@ -91,7 +91,7 @@ class RobotSprite:
         screen.blit(transformed, self.position - (size / 2))
 
 
-@dataclass
+@dataclass(repr=False)
 class MyPlayground(Playground):
     game_engine: Optional["RobotWarEngine"] = None
 
@@ -124,9 +124,13 @@ class RobotWarEngine(GameEngine):
         sandbox = MySandbox(self.playground)
         self.playground.sandboxes = [sandbox]
         self.workers: List[BlockGenerator] = []
-
-        run_program(USER_FILENAME, sandbox)
+        module = Module("__main__")
+        with USER_FILENAME.open("rt") as file_obj:
+            source = file_obj.read()
+        sandbox.call_function(module.add_source_code(source))
         self.user_running = True
+        while True:
+            sandbox.step()
 
     def paint_ui(self):
         self.screen.fill("slateblue4")
@@ -176,5 +180,5 @@ def main():
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
-    logging.getLogger("robot_war.vm.instructions").setLevel(logging.WARNING)
+    # logging.getLogger("robot_war.vm.instructions").setLevel(logging.WARNING)
     main()
