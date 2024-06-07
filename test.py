@@ -4,10 +4,10 @@ from pathlib import Path
 import pygame
 from typing import Dict, Optional, Generator, List
 
-from robot_war.exceptions import RobotWarSystemExit, BlockThread
+from robot_war.exceptions import RobotWarSystemExit, BlockThread, ReturnException
 from robot_war.vm.api_class import ApiClass
 from robot_war.vm.exec_context import Playground, SandBox
-from robot_war.vm.run_program import run_program
+from robot_war.vm.source_module import Module
 
 # Constants:
 LOG = logging.getLogger(__name__)
@@ -91,7 +91,7 @@ class RobotSprite:
         screen.blit(transformed, self.position - (size / 2))
 
 
-@dataclass
+@dataclass(repr=False)
 class MyPlayground(Playground):
     game_engine: Optional["RobotWarEngine"] = None
 
@@ -118,14 +118,14 @@ class RobotWarEngine(GameEngine):
         self.robot_image = pygame.transform.scale_by(pygame.image.load(ROBOT_IMAGE_FILENAME), 0.25)
         self.fireball_image = pygame.transform.scale_by(pygame.image.load(FIREBALL_IMAGE_FILENAME), 0.2)
 
-        # Note that run_program doesn't block while the program runs. It loads a program into the VM and the execution
-        # must be advanced by steps or by calling exec_through()
+        # Note that call_function doesn't block while the program runs. It loads a program into the VM and the execution
+        # must be advanced by steps in backend()
         self.playground = MyPlayground(USER_FILENAME, game_engine=self)
         sandbox = MySandbox(self.playground)
         self.playground.sandboxes = [sandbox]
         self.workers: List[BlockGenerator] = []
-
-        run_program(USER_FILENAME, sandbox)
+        module = Module("__main__")
+        sandbox.call_function(module.read_source_file(USER_FILENAME))
         self.user_running = True
 
     def paint_ui(self):
@@ -137,7 +137,7 @@ class RobotWarEngine(GameEngine):
             for sandbox in self.playground.sandboxes:
                 try:
                     sandbox.step()
-                except RobotWarSystemExit:
+                except (RobotWarSystemExit, ReturnException):
                     self.user_running = False
 
         index = 0

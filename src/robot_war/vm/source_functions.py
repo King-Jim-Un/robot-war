@@ -1,27 +1,20 @@
 from dataclasses import dataclass, field
-from dis import get_instructions, code_info
 import logging
-import re
 from typing import Dict, Any, Optional, List
 
-from robot_war.constants import CODE_CLASS
 from robot_war.vm.instructions import CodeLine
 
 try:
-    from robot_war.vm.exec_context import FunctionContext
+    from robot_war.vm.exec_context import FunctionContext, SandBox
     from robot_war.vm.source_module import Module
 except ImportError:
-    Module = FunctionContext = None
+    Module = FunctionContext = Sandbox = None
 
 # Types:
 CodeDict = Dict[str, "CodeBlock"]
 
 # Constants:
 LOG = logging.getLogger(__name__)
-SEARCH_NUM_ARGS = re.compile(r"^Argument count:\s+(\d+)", re.MULTILINE)
-SEARCH_VAR_NAMES1 = re.compile(r"^Variable names:(.*)", re.MULTILINE | re.DOTALL)
-SEARCH_VAR_NAMES2 = re.compile(r"(.*?)^\S", re.MULTILINE | re.DOTALL)
-SEARCH_VAR_NAMES3 = re.compile(r"(\d+): (\w+)")
 
 
 @dataclass(repr=False)
@@ -36,38 +29,28 @@ class CodeBlock:
         module_name = None if self.module is None else self.module.name
         return f"CodeBlock(module={module_name}, {len(self.code_lines)} lines, {len(self.constants)} constants)"
 
-    def set_function(self, function: CODE_CLASS):
-        from robot_war.vm.parse_source_file import OP_CODE_CLASSES
-        for instr in get_instructions(function):
-            line_class = OP_CODE_CLASSES[instr.opname]
-            instr_obj = line_class(instr.starts_line, instr.offset, instr.opname, instr.arg, instr.argrepr)
-            self.code_lines[instr.offset] = instr_obj
 
-        # Number of arguments
-        info_str = code_info(function)
-        match = SEARCH_NUM_ARGS.search(info_str)
-        assert match
-        self.num_params = int(match.group(1))
-
-        # Argument names
-        match = SEARCH_VAR_NAMES1.search(info_str)
-        if match:
-            var_name_str = match.group(1)
-            match = SEARCH_VAR_NAMES2.search(var_name_str)
-            if match:
-                var_name_str = match.group(1)
-            var_name_dict = {int(index): name for index, name in SEARCH_VAR_NAMES3.findall(var_name_str)}
-            self.param_names = [var_name_dict[index] for index in range(self.num_params)]
-
+# The following code gives us a fancy way to create a function from byte codes on-the-fly. It works like this:
+#
+# with Function("foo", ["arg1", "arg2"]) as foo:
+#     foo.LOAD_CONSTANT("bar")
+#     foo.LOAD_FAST("arg1")
+#     foo.LOAD_FAST("arg2")
+#     foo.CALL_FUNCTION(2)
+#     foo.RETURN_VALUE()
+#
+# That makes function foo which will accept arg1 and arg2, and will call function bas with them before returning the
+# result.
 
 @dataclass
 class ConstMember:
+    """Used below to add LOAD_CONST to the function creator"""
     function: "Function"
     name: str
 
     def __call__(self, note: str):
         from robot_war.vm.exec_context import CODE_STEP
-        from robot_war.vm.parse_source_file import OP_CODE_CLASSES
+        from robot_war.vm.instructions.op_code_dict import OP_CODE_CLASSES
         code_lines = self.function.code_block.code_lines
         offset = len(code_lines) * CODE_STEP
         if note not in self.function.constants:
@@ -79,12 +62,13 @@ class ConstMember:
 
 @dataclass
 class FastMember:
+    """Used below to add LOAD_FAST to the function creator"""
     function: "Function"
     name: str
 
     def __call__(self, fast: str) -> int:
         from robot_war.vm.exec_context import CODE_STEP
-        from robot_war.vm.parse_source_file import OP_CODE_CLASSES
+        from robot_war.vm.instructions.op_code_dict import OP_CODE_CLASSES
         code_lines = self.function.code_block.code_lines
         offset = len(code_lines) * CODE_STEP
         if fast not in self.function.arg_names:
@@ -96,12 +80,13 @@ class FastMember:
 
 @dataclass
 class NoteMember:
+    """Used below to add LOAD_NAME to the function creator"""
     function: "Function"
     name: str
 
     def __call__(self, note: str) -> int:
         from robot_war.vm.exec_context import CODE_STEP
-        from robot_war.vm.parse_source_file import OP_CODE_CLASSES
+        from robot_war.vm.instructions.op_code_dict import OP_CODE_CLASSES
         code_lines = self.function.code_block.code_lines
         offset = len(code_lines) * CODE_STEP
         instr_class = OP_CODE_CLASSES[self.name]
@@ -111,12 +96,17 @@ class NoteMember:
 
 @dataclass
 class OperandMember:
+    """
+    Used below to add the following to the function creator:
+        BUILD_LIST, BUILD_TUPLE, CALL_FUNCTION, LOAD_MODULE_FILE_1, LOAD_MODULE_FILE_2, LOAD_SUBSCR, POP_TOP,
+        RAISE_VARARGS, and RETURN_VALUE
+    """
     function: "Function"
     name: str
 
     def __call__(self, operand: int = 0) -> int:
         from robot_war.vm.exec_context import CODE_STEP
-        from robot_war.vm.parse_source_file import OP_CODE_CLASSES
+        from robot_war.vm.instructions.op_code_dict import OP_CODE_CLASSES
         code_lines = self.function.code_block.code_lines
         offset = len(code_lines) * CODE_STEP
         instr_class = OP_CODE_CLASSES[self.name]
@@ -134,17 +124,26 @@ class Function:
     constants: List[str] = field(default_factory=list)
 
     def add_const_member(self, name: str):
+        """Used below to add LOAD_CONST to the function creator"""
         setattr(self, name, ConstMember(self, name))
 
     def add_fast_member(self, name: str):
+        """Used below to add LOAD_FAST to the function creator"""
         setattr(self, name, FastMember(self, name))
 
     def add_note_member(self, name: str):
+        """Used below to add LOAD_NAME to the function creator"""
         setattr(self, name, NoteMember(self, name))
 
     def add_operand_member(self, name: str):
+        """
+        Used below to add the following to the function creator:
+            BUILD_LIST, BUILD_TUPLE, CALL_FUNCTION, LOAD_MODULE_FILE_1, LOAD_MODULE_FILE_2, LOAD_SUBSCR, POP_TOP,
+            RAISE_VARARGS, and RETURN_VALUE
+        """
         setattr(self, name, OperandMember(self, name))
 
+    # Function creator gizmo
     def __enter__(self):
         self.add_const_member("LOAD_CONST")
         self.add_fast_member("LOAD_FAST")
@@ -159,5 +158,6 @@ class Function:
         pass
 
     def function_context(self, source_class, *args) -> FunctionContext:
+        """Create a context for executing this function"""
         from robot_war.vm.exec_context import FunctionContext
         return FunctionContext(self, {index: arg for index, arg in enumerate(args)}, source_class)

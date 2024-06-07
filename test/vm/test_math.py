@@ -89,3 +89,8 @@ def test_negative():
 def test_not():
     a = True
     return not a
+
+
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.DEBUG)
+    test_addition()

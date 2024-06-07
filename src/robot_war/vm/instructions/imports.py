@@ -147,11 +147,10 @@ class LoadModuleFile1(CodeLine):  # Not in parser
             load.POP_TOP()  # Discard the None that will be returned by importing the module
             load.LOAD_FAST("module_list")  # Return the module list we create in advance
             load.RETURN_VALUE()  # This will do the push
-        from robot_war.vm.parse_source_file import parse_source_file
-        module_block = parse_source_file(sandbox, module_dot_name, file_path)
-        module_list.append(sandbox.playground.all_modules[module_dot_name])
         sandbox.call_function(load, module_list)
-        sandbox.call_function(Function(module_dot_name, code_block=module_block))
+        module = Module(module_dot_name.split(".")[-1])
+        module_list.append(module)
+        sandbox.call_function(module.read_source_file(file_path))
 
 
 class LoadModuleFile2(CodeLine):  # Not in parser
