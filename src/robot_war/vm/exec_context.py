@@ -181,7 +181,6 @@ class SandBox:
             assert self.playground.robot is None, "each VM can only instantiate a single robot"
             class_list = [parent_classes[0](_playground=self.playground)]
             self.playground.set_robot(class_list[0])
-            LOG.debug("Instantiated robot %r", class_list[0])
         else:
             raise TerminalError("Robots can only inherit from a single API class")
         source_class = SourceClass({"__name__": name}, class_list, function.code_block.module)

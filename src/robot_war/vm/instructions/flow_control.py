@@ -89,6 +89,7 @@ class PopJumpIfTrue(CodeLine):
 
 class RaiseVarArgs(CodeLine):
     def exec(self, sandbox: SandBox):
+        super().exec(sandbox)
         assert self.operand != 0, "TODO: re-raise"
         assert self.operand != 2, "TODO: raise with cause"
         raise sandbox.pop()

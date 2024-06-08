@@ -1,6 +1,7 @@
 import logging
+from unittest import TestCase
 
-from test.vm import compare_in_vm, dump_func
+from test.vm import compare_in_vm, run_in_vm, dump_func
 
 # Constants:
 LOG = logging.getLogger(__name__)
@@ -35,6 +36,7 @@ def test_call_method():
 
 @compare_in_vm
 def test_jumps_1():
+    """JUMP_ABSOLUTE & POP_JUMP_IF_FALSE"""
     a = 1
     while a < 5:
         print(a)
@@ -42,6 +44,17 @@ def test_jumps_1():
     return a
 
 
+@run_in_vm
+def raise_exception():
+    raise IndexError()
+
+
+class TestFlowControl(TestCase):
+    def test_exception(self):
+        with self.assertRaises(IndexError):
+            raise_exception()
+
+
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
-    test_jumps_1()
+    TestFlowControl().test_exception()

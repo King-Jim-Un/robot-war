@@ -9,8 +9,8 @@ except ImportError:
 
 # Constants:
 LOG = logging.getLogger(__name__)
-COMPARE_DICT = {"<": lambda a, b: a < b, "<=": lambda a, b: a <= b, ">": lambda a, b: a >= b, ">=": lambda a, b: a >= b,
-                "==": lambda a, b: a < b, "!=": lambda a, b: a < b, }
+COMPARE_DICT = {"<": lambda a, b: a < b, "<=": lambda a, b: a <= b, ">": lambda a, b: a > b, ">=": lambda a, b: a >= b,
+                "==": lambda a, b: a == b, "!=": lambda a, b: a != b, }
 
 
 class BinarySlice(CodeLine):
@@ -72,6 +72,7 @@ class CompareOperand(CodeLine):
         super().exec(sandbox)
         arg2 = sandbox.pop()
         arg1 = sandbox.pop()
+        LOG.warning("%r %r %r %r",arg1,self.note,arg2,COMPARE_DICT[self.note](arg1,arg2))
         sandbox.push(COMPARE_DICT[self.note](arg1, arg2))
 
 
