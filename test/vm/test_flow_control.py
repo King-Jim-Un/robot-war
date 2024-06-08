@@ -1,6 +1,6 @@
 import logging
 
-from test.vm import compare_in_vm
+from test.vm import compare_in_vm, dump_func
 
 # Constants:
 LOG = logging.getLogger(__name__)
@@ -35,4 +35,4 @@ def test_call_method():
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
-    test_call()
+    test_call_method()

@@ -51,10 +51,13 @@ class Playground:
                 f"{self.robot}")
 
 
-@dataclass
+@dataclass(repr=False)
 class SandBox:
     playground: Playground
     call_stack: List[FunctionContext] = field(default_factory=list)
+
+    def __repr__(self):
+        return f"Sandbox({self.playground}, {len(self.call_stack)} call entries"
 
     @property
     def context(self) -> FunctionContext:

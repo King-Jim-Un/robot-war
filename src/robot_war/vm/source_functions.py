@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 import logging
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, Callable, Tuple
 
 from robot_war.vm.instructions import CodeLine
 
@@ -48,7 +48,7 @@ class ConstMember:
     function: "Function"
     name: str
 
-    def __call__(self, note: str):
+    def __call__(self, note: str, label: Optional[str] = None) -> int:
         from robot_war.vm.exec_context import CODE_STEP
         from robot_war.vm.instructions.op_code_dict import OP_CODE_CLASSES
         code_lines = self.function.code_block.code_lines
@@ -57,6 +57,8 @@ class ConstMember:
             self.function.constants.append(note)
         instr_class = OP_CODE_CLASSES[self.name]
         code_lines[offset] = instr_class(None, offset, self.name, self.function.constants.index(note), note)
+        if label:
+            self.function.labels[label] = offset
         return offset
 
 
@@ -66,7 +68,7 @@ class FastMember:
     function: "Function"
     name: str
 
-    def __call__(self, fast: str) -> int:
+    def __call__(self, fast: str = None, label: Optional[str] = None) -> int:
         from robot_war.vm.exec_context import CODE_STEP
         from robot_war.vm.instructions.op_code_dict import OP_CODE_CLASSES
         code_lines = self.function.code_block.code_lines
@@ -75,6 +77,8 @@ class FastMember:
             self.function.arg_names.append(fast)
         instr_class = OP_CODE_CLASSES[self.name]
         code_lines[offset] = instr_class(None, offset, self.name, self.function.arg_names.index(fast), fast)
+        if label:
+            self.function.labels[label] = offset
         return offset
 
 
@@ -84,13 +88,36 @@ class NoteMember:
     function: "Function"
     name: str
 
-    def __call__(self, note: str) -> int:
+    def __call__(self, note: str = None, label: Optional[str] = None) -> int:
         from robot_war.vm.exec_context import CODE_STEP
         from robot_war.vm.instructions.op_code_dict import OP_CODE_CLASSES
         code_lines = self.function.code_block.code_lines
         offset = len(code_lines) * CODE_STEP
         instr_class = OP_CODE_CLASSES[self.name]
         code_lines[offset] = instr_class(None, offset, self.name, 0, note)
+        if label:
+            self.function.labels[label] = offset
+        return offset
+
+
+@dataclass
+class RelativeMember:
+    """Used below to add POP_JUMP_IF_FALSE to the function creator"""
+    function: "Function"
+    name: str
+
+    def __call__(self, target: str = None, label: Optional[str] = None, offset: Optional[int] = None) -> int:
+        from robot_war.vm.exec_context import CODE_STEP
+        from robot_war.vm.instructions.op_code_dict import OP_CODE_CLASSES
+        code_lines = self.function.code_block.code_lines
+        if offset is None:
+            offset = len(code_lines) * CODE_STEP
+        instr_class = OP_CODE_CLASSES[self.name]
+        code_lines[offset] = instr_class(None, offset, self.name, self.function.labels.get(target, 0), target)
+        if target not in self.function.labels:
+            self.function.redo.append((offset, self, target))
+        if label:
+            self.function.labels[label] = offset
         return offset
 
 
@@ -104,7 +131,7 @@ class OperandMember:
     function: "Function"
     name: str
 
-    def __call__(self, operand: int = 0) -> int:
+    def __call__(self, operand: int = 0, label: Optional[str] = None) -> int:
         from robot_war.vm.exec_context import CODE_STEP
         from robot_war.vm.instructions.op_code_dict import OP_CODE_CLASSES
         code_lines = self.function.code_block.code_lines
@@ -122,6 +149,8 @@ class Function:
     closure: tuple = ()
     default_args: tuple = ()
     constants: List[str] = field(default_factory=list)
+    labels: Dict[str, int] = field(default_factory=dict)
+    redo: List[Tuple[int, Callable, str]] = field(default_factory=list)
 
     def add_const_member(self, name: str):
         """Used below to add LOAD_CONST to the function creator"""
@@ -143,11 +172,16 @@ class Function:
         """
         setattr(self, name, OperandMember(self, name))
 
+    def add_absolute_branch(self, name: str):
+        """Used below to add POP_JUMP_IF_FALSE to the function creator"""
+        setattr(self, name, RelativeMember(self, name))
+
     # Function creator gizmo
     def __enter__(self):
         self.add_const_member("LOAD_CONST")
         self.add_fast_member("LOAD_FAST")
         self.add_note_member("LOAD_NAME")
+        self.add_absolute_branch("POP_JUMP_IF_FALSE")
         for name in ["BUILD_LIST", "BUILD_TUPLE", "CALL_FUNCTION", "LOAD_MODULE_FILE_1", "LOAD_MODULE_FILE_2",
                      "LOAD_SUBSCR", "POP_TOP", "RAISE_VARARGS", "RETURN_VALUE"]:
             self.add_operand_member(name)
@@ -155,7 +189,8 @@ class Function:
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        pass
+        for offset, func, target in self.redo:
+            func(target, offset=offset)
 
     def function_context(self, source_class, *args) -> FunctionContext:
         """Create a context for executing this function"""

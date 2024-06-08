@@ -4,7 +4,7 @@ from inspect import getsource
 import logging
 from pathlib import Path
 import re
-from typing import Optional, List, Callable
+from typing import Optional, List, Callable, Tuple
 
 from robot_war.constants import CODE_CLASS
 from robot_war.vm.built_ins import BUILT_INS
@@ -34,8 +34,14 @@ class Module(GetName, Function):
     def get_method(self, name: str):
         return self.get_name(name)
 
-    def add_standard_python_function(self, standard_python_function: Callable) -> Function:
-        return self.add_source_code(getsource(standard_python_function))
+    def add_standard_python_function(
+            self, function: Callable, *standard_python_function: Callable,
+            replace: Optional[Tuple[re.Pattern, str]]) -> Function:
+        source = "\n".join(getsource(function) for function in standard_python_function + (function,))
+        if replace:
+            pattern, sub = replace
+            source = pattern.sub(sub, source)
+        return self.add_source_code(source)
 
     def add_source_code(self, source_code: str) -> Function:
         return self.add_code(compile(source_code, str(self.path), "exec"))
