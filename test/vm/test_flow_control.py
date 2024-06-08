@@ -33,6 +33,15 @@ def test_call_method():
     return d.b(2)
 
 
+@compare_in_vm
+def test_jumps_1():
+    a = 1
+    while a < 5:
+        print(a)
+        a += 1
+    return a
+
+
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
-    test_call_method()
+    test_jumps_1()

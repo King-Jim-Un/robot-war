@@ -37,6 +37,12 @@ class CallMethod(CodeLine):
         sandbox.call_function(sandbox.pop(), *reversed(rev_args))
 
 
+class JumpAbsolute(CodeLine):
+    def exec(self, sandbox: SandBox):
+        super().exec(sandbox)
+        sandbox.context.pc = self.operand
+
+
 class JumpBackward(CodeLine):
     def exec(self, sandbox: SandBox):
         super().exec(sandbox)
@@ -51,17 +57,17 @@ class JumpForward(CodeLine):
 
 class PopJumpIfFalse(CodeLine):
     def exec(self, sandbox: SandBox):
+        super().exec(sandbox)
         value = sandbox.pop()
         if not value:
-            sandbox.pc = self.operand
-        super().exec(sandbox)
+            sandbox.context.pc = self.operand
 
 
 class PopJumpIfNone(CodeLine):
     def exec(self, sandbox: SandBox):
         value = sandbox.pop()
         if value is None:
-            sandbox.pc = self.operand
+            sandbox.context.pc = self.operand
         super().exec(sandbox)
 
 
@@ -69,7 +75,7 @@ class PopJumpIfNotNone(CodeLine):
     def exec(self, sandbox: SandBox):
         value = sandbox.pop()
         if value is not None:
-            sandbox.pc = self.operand
+            sandbox.context.pc = self.operand
         super().exec(sandbox)
 
 

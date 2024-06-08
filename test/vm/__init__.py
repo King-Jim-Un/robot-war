@@ -1,7 +1,10 @@
+from contextlib import contextmanager
 from dis import dis
 from inspect import getsource
+from io import StringIO
 import logging
 import re
+import sys
 from typing import Optional, List
 
 from robot_war.exceptions import ReturnException
@@ -9,10 +12,22 @@ from robot_war.vm.built_ins import BUILT_INS
 from robot_war.vm.exec_context import SandBox
 from robot_war.vm.source_functions import Function
 from robot_war.vm.source_module import Module
+from test import conftest
 
 # Constants:
 LOG = logging.getLogger(__name__)
 SEARCH_DECORATOR = re.compile(r"^@compare_in_vm.*?def", re.DOTALL | re.MULTILINE)
+
+
+@contextmanager
+def capture_stdout():
+    old_stdout = sys.stdout
+    try:
+        capture = StringIO()
+        sys.stdout = capture
+        yield capture
+    finally:
+        sys.stdout = old_stdout
 
 
 def compare_in_vm(function1, functions: Optional[List] = None):
@@ -31,9 +46,14 @@ def compare_in_vm(function1, functions: Optional[List] = None):
     def wrapper():
         execute(module.add_standard_python_function(function1, *functions,
                                                     replace=(SEARCH_DECORATOR, "def")))
-        vm_return = execute(module.get_name(function1.__name__))
-        standard_return = function1()
+        with capture_stdout() as vm_io:
+            vm_return = execute(module.get_name(function1.__name__))
+        with capture_stdout() as standard_io:
+            standard_return = function1()
         assert standard_return == vm_return
+        assert standard_io.getvalue() == vm_io.getvalue()
+        if not conftest.G_CALLED_FROM_TEST:
+            sys.stdout.write(vm_io.getvalue())
 
     if isinstance(function1, list):
         return lambda function3: compare_in_vm(function3, function1)

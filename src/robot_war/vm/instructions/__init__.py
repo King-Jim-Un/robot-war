@@ -23,6 +23,5 @@ class CodeLine:
         return f"{self.__class__.__name__}({self.operand}, {self.note})"
 
     def exec(self, sandbox: SandBox):
+        LOG.debug("%r", self)
         sandbox.next()
-
-
