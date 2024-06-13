@@ -125,6 +125,7 @@ class RobotWarEngine(GameEngine):
         self.playground.sandboxes = [sandbox]
         self.workers: List[BlockGenerator] = []
         module = Module("__main__")
+        # TODO: Check if there's an __init__.py first? Not sure if that's right. Should test.
         sandbox.call_function(module.read_source_file(USER_FILENAME))
         self.user_running = True
 
