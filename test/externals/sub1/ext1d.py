@@ -1,5 +1,5 @@
-from sub1.ext1j import *
+from .ext1h import *
 
 
-def func1cc():
-    return func1y() + func1z()
+def func1n():
+    return func1v() + func1w()

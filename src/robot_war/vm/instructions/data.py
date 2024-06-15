@@ -72,7 +72,6 @@ class CompareOperand(CodeLine):
         super().exec(sandbox)
         arg2 = sandbox.pop()
         arg1 = sandbox.pop()
-        LOG.warning("%r %r %r %r",arg1,self.note,arg2,COMPARE_DICT[self.note](arg1,arg2))
         sandbox.push(COMPARE_DICT[self.note](arg1, arg2))
 
 
@@ -131,6 +130,7 @@ class LoadConstant(CodeLine):
                 constants[self.operand] = sandbox.context.function.code_block.module.get_name(self.note)
             else:
                 # Something simple, just eval it
+                from pathlib import WindowsPath  # Should allow us to eval a constant path
                 constants[self.operand] = eval(self.note)
 
         sandbox.push(constants[self.operand])
@@ -154,6 +154,7 @@ class LoadSubscript(CodeLine):
         super().exec(sandbox)
         key = sandbox.pop()
         container = sandbox.pop()
+        LOG.warning("%r[%r]",container,key)
         sandbox.push(container[key])
 
 

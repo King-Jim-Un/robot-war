@@ -48,6 +48,7 @@ OP_CODE_CLASSES = {
     "LOAD_METHOD": classes.LoadMethod,
     "LOAD_MODULE_FILE_1": imports.LoadModuleFile1,
     "LOAD_MODULE_FILE_2": imports.LoadModuleFile2,
+    "LOAD_MODULE_FILE_3": imports.LoadModuleFile3,
     "LOAD_NAME": classes.LoadName,
     "LOAD_SUBSCR": data.LoadSubscript,
     "MAKE_FUNCTION": classes.MakeFunction,
