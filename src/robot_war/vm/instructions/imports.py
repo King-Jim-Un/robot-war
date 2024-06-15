@@ -90,30 +90,33 @@ class ImportName(CodeLine):
             self.load_api(sandbox, parts)
         else:
             from robot_war.vm.source_functions import Function
-            modules_loaded, tuples_to_load = self.find_load_files(sandbox, level, parts, from_list)
+            modules_loaded, tuples_to_load, mod_path = self.find_load_files(sandbox, level, parts, from_list)
 
             # Now that we know which modules we have and which files must be loaded, we can create a function to do this
             # for us. We can't just do it here because loading modules involves running the top-level code in those
             # modules. We don't do that. We just add it to the stack and let it run at its own rate. But when it
             # completes, we will need to discard the return code (a None) and handle the rest of the operation.
-            arg_names = ["modules_loaded"] + [f"to_load{index}" for index in range(len(tuples_to_load))]
-            with Function("__import_name__", arg_names) as import_name:
+            arguments = {"modules_loaded": modules_loaded}
+            with Function("__import_name__", arguments=arguments) as import_name:
                 import_name.LOAD_FAST("modules_loaded")
                 link_up = bool(modules_loaded)  # if we've got any loaded, we'll need to link the module name into it
                 for index in range(len(tuples_to_load)):
-                    import_name.LOAD_FAST(f"to_load{index}")
+                    import_name.LOAD_CONST(repr(tuples_to_load[index]))
                     import_name.LOAD_MODULE_FILE_1()  # load the module
                     if link_up:
-                        import_name.LOAD_FAST(f"to_load{index}")
-                        import_name.LOAD_CONST("0")
-                        import_name.LOAD_SUBSCR()  # push module_dot_name
+                        import_name.LOAD_CONST(repr(tuples_to_load[index][0]))
                         import_name.LOAD_MODULE_FILE_2()
                         link_up = True
 
-                import_name.LOAD_CONST("0" if from_list is None else "-1")
-                import_name.LOAD_SUBSCR()
+                if from_list is None:
+                    import_name.LOAD_CONST("0")
+                    import_name.LOAD_SUBSCR()
+                else:
+                    import_name.POP_TOP()
+                    import_name.LOAD_MODULE_FILE_3(mod_path)
                 import_name.RETURN_VALUE()
-            sandbox.call_function(import_name, modules_loaded, *tuples_to_load)
+
+            import_name.call_in_sandbox(sandbox)
             # TODO: Need to be some sort of mechanism to verify that we actually imported the name
 
     @staticmethod
@@ -174,20 +177,23 @@ class ImportName(CodeLine):
             # Yes, continue from there
             modules_loaded, tuples_to_load = ImportName.find_files(
                 sandbox, parts[1:], dot_path, start_dir / parts[0], from_list)
-            return modules_loaded, [(dot_path, path)] + tuples_to_load
+            return modules_loaded, [(dotted, path)] + tuples_to_load
 
         # Does the next part exist as a regular file?
         path = start_dir / f"{parts[0]}.py"
         if path.exists():
             # Yes, stop there
-            return [], [(dotted, path)]
+            from_path = ".".join(from_dot_path)
+            all_modules = sandbox.playground.all_modules
+            loaded = [all_modules[from_path]] if from_path in all_modules else []
+            return loaded, [(dotted, path)]
 
-        # We can't find the next bit
-        raise ImportError(f"Can't find module {parts[0]}")
+        # File not found, but that's not necessarily an error as it could be a name within a module
+        return [], []
 
     @staticmethod
     def find_load_files(sandbox: SandBox, level: int, parts: List[str],
-                        from_list: Optional[Tuple[str]]) -> Tuple[List[Module], List[Tuple[str, Path]]]:
+                        from_list: Optional[Tuple[str]]) -> Tuple[List[Module], List[Tuple[str, Path]], str]:
         # from_list:
         #     None: import x.y.z
         #     Tuple[str] like ("y", "z"): from x import y, z
@@ -197,45 +203,63 @@ class ImportName(CodeLine):
         #     2: from ..x import y
         # parts:
         #     ["x", "y", "z"]: import x.y.z
+        # returns:
+        #     (
+        #         [list of loaded modules],
+        #         [list of tuples like ("a.b.c", Path(to file a.b.c.py)],
+        #         "dotted path to module like 'a.b.c'
+        #     )
 
         current_module = sandbox.context.function.code_block.module
 
         # Are we searching in the dark?
         if level == 0:
             # Yes, let's check if we've already loaded some of this path starting from the root of the user's program
+            mod_path = ".".join(parts)
             if parts[0] in sandbox.playground.all_modules:
                 # Found it; start there
-                return ImportName.find_files(sandbox, parts, [], sandbox.playground.root_path, from_list)
+                return ImportName.find_files(
+                    sandbox, parts, [], sandbox.playground.root_path, from_list) + (mod_path,)
 
             # We haven't loaded any of that yet, but the files might exist. Look for the files.
             if (sandbox.playground.root_path / f"{parts[0]}.py").exists() or \
                     (sandbox.playground.root_path / parts[0] / "__init__.py").exists():
                 # Found it; start there
-                return ImportName.find_files(sandbox, parts, [], sandbox.playground.root_path, from_list)
+                return ImportName.find_files(
+                    sandbox, parts, [], sandbox.playground.root_path, from_list) + (mod_path,)
 
             # We can't find it from the root, so let's do some relative searching.
 
             # Is the current module a package?
             if current_module.path.name == "__init__.py":
                 # Yes, so search from here
+                mod_path = ".".join(current_module.dot_path + parts)
                 return ImportName.find_files(
-                    sandbox, parts, current_module.dot_path, current_module.path.parent, from_list)
+                    sandbox, parts, current_module.dot_path, current_module.path.parent, from_list) + (mod_path,)
 
             # The current module is a regular file, so search for a sibling
+            mod_path = ".".join(current_module.dot_path[:-1] + parts)
             return ImportName.find_files(
-                sandbox, parts, current_module.dot_path[:-1], current_module.path.parent, from_list)
+                sandbox, parts, current_module.dot_path[:-1], current_module.path.parent, from_list) + (mod_path,)
 
         else:
             # We know this is a relative import, but is the current module a package?
-            assert current_module.path.name == "__init__.py"
-            dot_path = current_module.dot_path if level == 1 else current_module.dot_path[:1 - level]
+            if current_module.path.name == "__init__.py":
+                # Yes, relative means a child of this module
+                dot_path = current_module.dot_path if level == 1 else current_module.dot_path[:1 - level]
+            else:
+                # No, relative means a sibling of this module
+                dot_path = current_module.dot_path[:-level]
+            mod_path = ".".join(dot_path + parts)
             path = current_module.path.parents[level - 1]
-            return ImportName.find_files(sandbox, parts, dot_path, path, from_list)
+            return ImportName.find_files(sandbox, parts, dot_path, path, from_list) + (mod_path,)
 
 
 class ImportStar(CodeLine):
     def exec(self, sandbox: SandBox):
         """
+        pop TOP: Module
+        Load all names that don't begin with a "_" nor a "<"
         """
         super().exec(sandbox)
         from robot_war.vm.source_module import Module
@@ -254,19 +278,24 @@ class LoadModuleFile1(CodeLine):
         Load a module_name as module(N) from file_path
         push TOS: [module(0), module(1), ... module(N)]
         """
+        # Note that I made this an opcode instead of a function to ensure that the user can't call it somehow
         super().exec(sandbox)
         from robot_war.vm.source_module import Module
-        module_dot_list, file_path = sandbox.pop()
+        module_dot_path, file_path = sandbox.pop()
+        module_dot_list = module_dot_path.split(".")
         module_list: List[Module] = sandbox.pop()
         from robot_war.vm.source_functions import Function
-        with Function("__load_module_file_1__", ["module_list"]) as load:
-            # Note that we're not putting a call on this stack since we don't want this to be user-callable!
+        with Function("__load_module_file_1__", arguments={"module_list": module_list}) as load:
             load.POP_TOP()  # Discard the None that will be returned by importing the module
             load.LOAD_FAST("module_list")  # Return the module list we create in advance
             load.RETURN_VALUE()  # This will do the push
-        sandbox.call_function(load, module_list)
-        module = Module(module_dot_list[-1], path=file_path, dot_path=module_dot_list)
+        load.call_in_sandbox(sandbox)
+        module_name = module_dot_list[-1]
+        module = Module(module_name, path=file_path, dot_path=module_dot_list)
+        current_module_name = "__main__" if len(module_dot_list) == 1 else ".".join(module_dot_list[:-1])
+        sandbox.playground.all_modules[current_module_name].set_name(module_name, module)
         module_list.append(module)
+        sandbox.playground.all_modules[module_dot_path] = module
         sandbox.call_function(module.read_source_file(file_path))
 
 
@@ -277,8 +306,15 @@ class LoadModuleFile2(CodeLine):
         TOS1: [module(0), module(1), ... module(N)]
         Set module(N-1).module_dot_name = module(N)
         """
+        super().exec(sandbox)
         module_dot_name: str = sandbox.pop()
         module_name = module_dot_name.split(".")[-1]
         from robot_war.vm.source_module import Module
         module_list: List[Module] = sandbox.peek(-1)
-        module_list[-2].name_dict[module_name] = module_list[-1]
+        module_list[-2].set_name(module_name, module_list[-1])
+
+
+class LoadModuleFile3(CodeLine):
+    def exec(self, sandbox: SandBox):
+        super().exec(sandbox)
+        sandbox.push(sandbox.playground.all_modules[self.note])

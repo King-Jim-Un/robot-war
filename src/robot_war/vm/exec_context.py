@@ -191,7 +191,7 @@ class SandBox:
         # A second complication is function, which is just a regular function, so its namespace is module. We want to
         # use the class's namespace. To specify the right namespace, we'll create a temporary Constructor object.
         constructor = Constructor(source_class=source_class, **function.__dict__)
-        with Function("__wrapper__", ["creator", "source_class"]) as wrapper:
+        with Function("__wrapper__", arguments={"creator": constructor, "source_class": source_class}) as wrapper:
             # Call creation function
             wrapper.LOAD_FAST("creator")
             wrapper.CALL_FUNCTION(0)
@@ -200,7 +200,7 @@ class SandBox:
             # Return class
             wrapper.LOAD_FAST("source_class")
             wrapper.RETURN_VALUE()
-        self.call_stack.append(wrapper.function_context(source_class, constructor, source_class))
+        wrapper.call_in_sandbox(self)
         raise DontPushReturnValue()
 
     def block_thread(self, block_thread: BlockThread):

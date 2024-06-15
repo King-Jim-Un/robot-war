@@ -1,10 +1,13 @@
+import os
 from contextlib import contextmanager
 from dis import dis
 from importlib import import_module
 from inspect import getsource
 from io import StringIO
 import logging
+from pathlib import Path
 import re
+from subprocess import check_output
 import sys
 from typing import Optional, List, Callable
 
@@ -20,8 +23,6 @@ from test import conftest
 LOG = logging.getLogger(__name__)
 SEARCH_DECORATOR1 = re.compile(r"^@compare_in_vm.*?def", re.DOTALL | re.MULTILINE)
 SEARCH_DECORATOR2 = re.compile(r"^@run_in_vm.*?def", re.DOTALL | re.MULTILINE)
-
-sys.path.append(CONSTANTS.TEST.PATH.EXTERNALS)
 
 
 @contextmanager
@@ -98,25 +99,21 @@ def dump_func(function):
     assert False
 
 
-def compare_external(base_module, func_name):
+def compare_external(base_module: str, args: List[str]):
+    base_path = CONSTANTS.TEST.PATH.EXTERNALS / f"{base_module}.py"
     playground = Playground(CONSTANTS.TEST.PATH.EXTERNALS)
-    module = Module("module", name_dict=dict(BUILT_INS), path=CONSTANTS.TEST.PATH.EXTERNALS / f"{base_module}.py")
+    sys_mod = Module("sys", name_dict={"argv": [None] + args})
+    module = Module("__main__", name_dict=dict(BUILT_INS), path=base_path)
+    playground.all_modules = {"__main__": module, "sys": sys_mod}
     sandbox = SandBox(playground)
     playground.sandboxes = [sandbox]
-    sandbox.call_function(module.read_source_file(CONSTANTS.TEST.PATH.EXTERNALS / f"{base_module}.py"))
+    sandbox.call_function(module.read_source_file(base_path))
     try:
-        sandbox.exec_through()
+        with capture_stdout() as vm_io:
+            sandbox.exec_through()
     except ReturnException:
         pass
-    sandbox.call_function(module.get_name(func_name))
-    try:
-        sandbox.exec_through()
-    except ReturnException as ret:
-        with capture_stdout() as vm_io:
-            vm_return = ret.value
-        with capture_stdout() as standard_io:
-            standard_return = getattr(import_module(base_module), func_name)()
-        assert standard_return == vm_return
-        assert standard_io.getvalue() == vm_io.getvalue()
-        if not conftest.G_CALLED_FROM_TEST:
-            sys.stdout.write(vm_io.getvalue())
+    standard_io = check_output([sys.executable, base_path] + args, text=True)
+    assert standard_io == vm_io.getvalue()
+    if not conftest.G_CALLED_FROM_TEST:
+        sys.stdout.write(vm_io.getvalue())

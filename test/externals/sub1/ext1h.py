@@ -1,5 +1,6 @@
-from ..sub1.ext1j import *
+def func1v():
+    return "1v"
 
 
-def func1gg():
-    return func1y() + func1z()
+def func1w():
+    return "1w"

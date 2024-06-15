@@ -84,7 +84,7 @@ class FastMember:
 
 @dataclass
 class NoteMember:
-    """Used below to add LOAD_NAME to the function creator"""
+    """Used below to add LOAD_NAME and LOAD_MODULE_FILE_3 to the function creator"""
     function: "Function"
     name: str
 
@@ -151,6 +151,7 @@ class Function:
     constants: List[str] = field(default_factory=list)
     labels: Dict[str, int] = field(default_factory=dict)
     redo: List[Tuple[int, Callable, str]] = field(default_factory=list)
+    arguments: Dict[str, Any] = field(default_factory=dict)
 
     def add_const_member(self, name: str):
         """Used below to add LOAD_CONST to the function creator"""
@@ -161,7 +162,7 @@ class Function:
         setattr(self, name, FastMember(self, name))
 
     def add_note_member(self, name: str):
-        """Used below to add LOAD_NAME to the function creator"""
+        """Used below to add LOAD_NAME and LOAD_MODULE_FILE_3 to the function creator"""
         setattr(self, name, NoteMember(self, name))
 
     def add_operand_member(self, name: str):
@@ -181,6 +182,7 @@ class Function:
         self.add_const_member("LOAD_CONST")
         self.add_fast_member("LOAD_FAST")
         self.add_note_member("LOAD_NAME")
+        self.add_note_member("LOAD_MODULE_FILE_3")
         self.add_absolute_branch("POP_JUMP_IF_FALSE")
         for name in ["BUILD_LIST", "BUILD_TUPLE", "CALL_FUNCTION", "LOAD_MODULE_FILE_1", "LOAD_MODULE_FILE_2",
                      "LOAD_SUBSCR", "POP_TOP", "RAISE_VARARGS", "RETURN_VALUE"]:
@@ -196,3 +198,7 @@ class Function:
         """Create a context for executing this function"""
         from robot_war.vm.exec_context import FunctionContext
         return FunctionContext(self, {index: arg for index, arg in enumerate(args)}, source_class)
+
+    def call_in_sandbox(self, sandbox: "Sandbox"):
+        self.arg_names = list(self.arguments.keys())
+        sandbox.call_function(self, *tuple(self.arguments.values()))

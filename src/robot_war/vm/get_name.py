@@ -10,7 +10,13 @@ class GetName:
     def get_name(self, name: str):
         return self.name_dict[name]
 
+    def get_attr(self, name: str):
+        return self.name_dict[name]
+
     def set_name(self, name: str, value: Any):
+        self.name_dict[name] = value
+
+    def set_attr(self, name: str, value: Any):
         self.name_dict[name] = value
 
     def del_name(self, name: str):

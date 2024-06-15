@@ -1,5 +1,5 @@
-from sub1.sub2 import *
+from .sub2 import *
 
 
-def func1dd():
+def func1o():
     return func2()
