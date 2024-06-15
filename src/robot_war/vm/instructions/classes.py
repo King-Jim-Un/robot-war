@@ -27,7 +27,10 @@ class LoadMethod(CodeLine):
     def exec(self, sandbox: SandBox):
         super().exec(sandbox)
         obj = sandbox.pop()
-        sandbox.push(obj.get_method(self.note))
+        try:
+            sandbox.push(obj.get_method(self.note))
+        except AttributeError:
+            sandbox.push(getattr(obj, self.note))
         sandbox.push(obj)
 
 

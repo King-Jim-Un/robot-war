@@ -168,10 +168,12 @@ class SandBox:
         return self.context.data_stack[offset]
 
     def pop(self):
+        LOG.debug("    pop(%r)", self.peek(-1))
         return self.context.data_stack.pop()
 
     def push(self, value):
-        return self.context.data_stack.append(value)
+        self.context.data_stack.append(value)
+        LOG.debug("    push(%r)", self.peek(-1))
 
     def build_class(self, function: Function, name: str, *parent_classes):
         num_api_parents = len([cls for cls in parent_classes if cls in API_CLASSES])

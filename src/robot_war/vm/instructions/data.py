@@ -1,4 +1,6 @@
+from dataclasses import dataclass
 import logging
+from typing import Optional, Iterable
 
 from robot_war.vm.instructions import CodeLine
 
@@ -11,6 +13,12 @@ except ImportError:
 LOG = logging.getLogger(__name__)
 COMPARE_DICT = {"<": lambda a, b: a < b, "<=": lambda a, b: a <= b, ">": lambda a, b: a > b, ">=": lambda a, b: a >= b,
                 "==": lambda a, b: a == b, "!=": lambda a, b: a != b, }
+
+
+@dataclass
+class Slice:
+    start: Optional[int]
+    end: Optional[int]
 
 
 class BinarySlice(CodeLine):
@@ -27,13 +35,16 @@ class BinarySubscript(CodeLine):
         super().exec(sandbox)
         key = sandbox.pop()
         container = sandbox.pop()
-        sandbox.push(container[key])
+        sandbox.push(container[key.start:key.end] if isinstance(key, Slice) else container[key])
 
 
 class BuildConstKeyMap(CodeLine):
     def exec(self, sandbox: SandBox):
         super().exec(sandbox)
-        sandbox.push({key: sandbox.pop() for key in reversed(sandbox.pop())})
+        keys = sandbox.pop()
+        values = sandbox.context.data_stack[-len(keys):]
+        sandbox.context.data_stack = sandbox.context.data_stack[:-len(keys)]
+        sandbox.push({key: values[index] for index, key in enumerate(keys)})
 
 
 class BuildList(CodeLine):
@@ -48,6 +59,14 @@ class BuildSet(CodeLine):
     def exec(self, sandbox: SandBox):
         super().exec(sandbox)
         sandbox.push({sandbox.pop() for _ in range(self.operand)})
+
+
+class BuildSlice(CodeLine):
+    def exec(self, sandbox: SandBox):
+        super().exec(sandbox)
+        end = sandbox.pop()
+        start = sandbox.pop()
+        sandbox.push(Slice(start, end))
 
 
 class BuildString(CodeLine):
@@ -107,6 +126,16 @@ class GetLength(CodeLine):
         sandbox.push(len(sandbox.peek(-1)))
 
 
+class ListExtend(CodeLine):
+    def exec(self, sandbox: SandBox):
+        super().exec(sandbox)
+        extend: Iterable = sandbox.pop()
+        the_list: list = sandbox.pop()
+        for item in extend:
+            the_list.append(item)
+        sandbox.push(the_list)
+
+
 class LoadClosure(CodeLine):
     def exec(self, sandbox: SandBox):
         super().exec(sandbox)
@@ -162,6 +191,14 @@ class PopTop(CodeLine):
     def exec(self, sandbox: SandBox):
         super().exec(sandbox)
         sandbox.pop()
+
+
+class SetUpdate(CodeLine):
+    def exec(self, sandbox: SandBox):
+        super().exec(sandbox)
+        items: Iterable = sandbox.pop()
+        the_set: set = sandbox.pop()
+        sandbox.push(the_set.union(items))
 
 
 class StoreFast(CodeLine):
