@@ -1,15 +1,12 @@
-import os
 from contextlib import contextmanager
 from dis import dis
-from importlib import import_module
 from inspect import getsource
 from io import StringIO
 import logging
-from pathlib import Path
 import re
 from subprocess import check_output
 import sys
-from typing import Optional, List, Callable
+from typing import Optional, List, Callable, Dict, Any
 
 from robot_war.constants import CONSTANTS
 from robot_war.exceptions import ReturnException
@@ -36,8 +33,10 @@ def capture_stdout():
         sys.stdout = old_stdout
 
 
-def compare_in_vm(function1, functions: Optional[List[Callable]] = None):
+def compare_in_vm(function1=None, functions: Optional[List[Callable]] = None, global_vars: Optional[Dict[str, Any]] = None):
     module = Module("module", name_dict=dict(BUILT_INS))
+    if global_vars:
+        module.name_dict.update(global_vars)
     sandbox = SandBox(None)  # noqa
     if functions is None:
         functions = []
@@ -63,6 +62,8 @@ def compare_in_vm(function1, functions: Optional[List[Callable]] = None):
 
     if isinstance(function1, list):
         return lambda function3: compare_in_vm(function3, function1)
+    elif function1 is None:
+        return lambda function4: compare_in_vm(function4, global_vars=global_vars)
     else:
         return wrapper
 

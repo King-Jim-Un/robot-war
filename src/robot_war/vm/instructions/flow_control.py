@@ -33,7 +33,7 @@ class CallFunctionKW(CodeLine):
 class CallMethod(CodeLine):
     def exec(self, sandbox: SandBox):
         super().exec(sandbox)
-        rev_args = [sandbox.pop() for _ in range(self.operand + 1)]  # include self
+        rev_args = [sandbox.pop() for _ in range(self.operand)]
         sandbox.call_function(sandbox.pop(), *reversed(rev_args))
 
 

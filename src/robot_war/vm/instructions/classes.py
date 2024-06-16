@@ -31,7 +31,6 @@ class LoadMethod(CodeLine):
             sandbox.push(obj.get_method(self.note))
         except AttributeError:
             sandbox.push(getattr(obj, self.note))
-        sandbox.push(obj)
 
 
 class LoadName(CodeLine):
