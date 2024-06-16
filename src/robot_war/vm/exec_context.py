@@ -5,7 +5,7 @@ from typing import List, Any, Dict, Optional
 
 from robot_war.api import API_CLASSES
 from robot_war.exceptions import DontPushReturnValue, TerminalError, BlockThread, RobotWarSystemExit
-from robot_war.vm.api_class import ApiClass, ApiMethod
+from robot_war.vm.api_class import ApiClass
 from robot_war.vm.get_name import GetName
 from robot_war.vm.instructions.flow_control import ReturnException
 from robot_war.vm.source_class import SourceClass, SourceInstance, BoundMethod, Constructor
@@ -130,9 +130,6 @@ class SandBox:
 
         else:
             assert function not in API_CLASSES, "API classes must be subclassed, do not instantiate as-is"
-            if isinstance(function, ApiMethod) and args and isinstance(args[0], SourceInstance):
-                function = function.function
-                args = (self.playground.robot,) + args[1:]
 
             try:
                 self.push(function(*args, **kwargs))

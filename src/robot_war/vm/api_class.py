@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 import logging
-from typing import Optional, Callable
+from typing import Optional
 
 from robot_war.vm.get_name import GetName
 
@@ -22,9 +22,4 @@ class ApiClass(GetName):
         if name.startswith("_"):
             raise KeyError(f"not going to return {name}")
         value = getattr(self.__class__, name)
-        return ApiMethod(value) if callable(value) else value  # TODO: This is a little fragile and must be expanded later on
-
-
-@dataclass
-class ApiMethod:
-    function: Callable = None
+        return getattr(self, name) if callable(value) else value  # TODO: This is a little fragile and must be expanded later on

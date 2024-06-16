@@ -57,6 +57,9 @@ class SourceInstance(GetName):
     source_class: Optional[SourceClass] = None
     values: Dict[str, Any] = field(default_factory=dict)
 
+    def __getattr__(self, item):
+        return self.get_name(item)
+
     def set_attr(self, name: str, value: Any):
         self.values[name] = value
 
@@ -68,7 +71,8 @@ class SourceInstance(GetName):
             return BoundMethod(instance=self, **obj.__dict__) if isinstance(obj, Function) else obj
 
     def get_method(self, name: str):
-        return BoundMethod(instance=self, **self.get_name(name).__dict__)
+        attr = self.get_name(name)
+        return attr if callable(attr) else BoundMethod(instance=self, **attr.__dict__)
 
     def get_name(self, name: str):
         return self.name_dict[name] if name in self.name_dict else self.source_class.get_name(name)
