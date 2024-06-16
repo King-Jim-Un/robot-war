@@ -16,8 +16,6 @@ FIRE_PER_TICK = 10.0
 @dataclass
 class Robot(ApiClass):
     # NOTE: START MEMBER NAMES WITH AN UNDERSCORE UNLESS IT'S OKAY FOR THE USER TO ACCESS THEM!
-    position: Vector2 = Vector2(300.0, 200.0)
-    facing: float = 0.0
 
     def turn_right(self, angle):
         LOG.warning("turn_right(%f)", angle)

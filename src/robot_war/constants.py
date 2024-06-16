@@ -4,6 +4,10 @@ CODE_CLASS = compile("0", "", "eval").__class__  # There's gotta be a better way
 
 
 class CONSTANTS:
-    class TEST:
-        class PATH:
-            EXTERNALS = Path(__file__).parents[2] / "test" / "externals"
+    class PATHS:
+        ROOT = Path(__file__).parents[2]
+        ROBOT_IMAGE = ROOT / "assets" / "robot1.png"
+        FIREBALL_IMAGE = ROOT / "assets" / "fireball1.png"
+
+        class TEST:
+            EXTERNALS = Path(__file__).parents[4] / "test" / "externals"

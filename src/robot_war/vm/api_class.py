@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 import logging
+from pygame import Vector2
 from typing import Optional
 
 from robot_war.vm.get_name import GetName
@@ -17,6 +18,8 @@ LOG = logging.getLogger(__name__)
 @dataclass
 class ApiClass(GetName):
     _playground: Optional["Playground"] = None
+    position: Vector2 = Vector2(300.0, 200.0)
+    facing: float = 0.0
 
     def get_name(self, name: str):
         if name.startswith("_"):
