@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 import logging
 import pygame
+from time import monotonic
 from typing import Optional, List
 
 from robot_war.constants import CONSTANTS
@@ -46,6 +47,8 @@ class ThreadGround(Playground):
 
 
 class RWEngine(GameEngine):
+    next_frame_time: float = 0
+
     def __init__(self, video_size):
         super().__init__(video_size)
         self.robot_image = pygame.transform.scale_by(pygame.image.load(CONSTANTS.PATHS.ROBOT_IMAGE), 0.25)
@@ -67,12 +70,19 @@ class RWEngine(GameEngine):
         self.sprites.draw(self.screen)
 
     def backend(self):
-        if self.user_running:
-            for sandbox in self.playground.sandboxes:
-                try:
-                    sandbox.step()
-                except (RobotWarSystemExit, ReturnException):
-                    self.user_running = False
+        self.next_frame_time += CONSTANTS.TIMING.FRAMES
+        alive = False
+        while True:
+            if self.user_running:
+                for sandbox in self.playground.sandboxes:
+                    try:
+                        sandbox.step()
+                        alive = True
+                    except (RobotWarSystemExit, ReturnException):
+                        self.user_running = False
+
+            if (not alive) or (monotonic() > self.next_frame_time):
+                break
 
         index = 0
         while index < len(self.workers):
@@ -85,6 +95,9 @@ class RWEngine(GameEngine):
                 worker.sandbox.push(stop.value)
             else:
                 index += 1
+
+        if not alive:
+            self.clock.tick(CONSTANTS.TIMING.FRAME_RATE)
 
     def block_thread(self, sandbox: SandBox, block_thread: BlockThread):
         # Find the sandbox

@@ -13,6 +13,6 @@ def main():
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
-    logging.getLogger("robot_war.vm.instructions").setLevel(logging.WARNING)
-    logging.getLogger("robot_war.vm.exec_context").setLevel(logging.WARNING)
+    logging.getLogger("robot_war.vm.instructions").setLevel(logging.WARNING)  # Op-codes executed
+    logging.getLogger("robot_war.vm.exec_context").setLevel(logging.WARNING)  # push/pop values
     main()

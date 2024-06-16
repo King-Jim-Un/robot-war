@@ -8,9 +8,9 @@ from robot_war.vm.source_module import Module
 
 # Constants:
 LOG = logging.getLogger(__name__)
-DEG_PER_TICK = 3.0
-DIST_PER_TICK = 5.0
-FIRE_PER_TICK = 10.0
+DEG_PER_TICK = 6.0
+DIST_PER_TICK = 10.0
+FIRE_PER_TICK = 20.0
 
 
 @dataclass

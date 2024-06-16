@@ -20,7 +20,6 @@ class GameEngine:
             self.paint_ui()
             pygame.display.flip()
             self.backend()
-            self.clock.tick(60)
 
         pygame.quit()
 
@@ -28,4 +27,4 @@ class GameEngine:
         pass
 
     def backend(self):
-        pass
+        self.clock.tick(60)
