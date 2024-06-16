@@ -1,10 +1,13 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 import logging
 from pathlib import Path
 import pygame
-from typing import Dict, Optional, Generator, List
+from typing import Optional, List
 
 from robot_war.exceptions import RobotWarSystemExit, BlockThread, ReturnException
+from robot_war.game_engine.base_game_engine import GameEngine
+from robot_war.game_engine.game_threads import BlockGenerator, ThreadBox
+from robot_war.game_engine.sprites import Sprite
 from robot_war.vm.api_class import ApiClass
 from robot_war.vm.exec_context import Playground, SandBox
 from robot_war.vm.source_module import Module
@@ -15,62 +18,6 @@ ROOT_PATH = Path(__file__).parent
 ROBOT_IMAGE_FILENAME = ROOT_PATH / "assets" / "robot1.png"
 FIREBALL_IMAGE_FILENAME = ROOT_PATH / "assets" / "fireball1.png"
 USER_FILENAME = ROOT_PATH / "user-scripts" / "test-script.py"
-
-
-@dataclass
-class Sprite:
-    image: pygame.Surface
-    position: pygame.Vector2 = pygame.Vector2(0.0, 0.0)
-    facing: float = 0.0
-
-    def draw(self, screen: pygame.Surface):
-        transformed = pygame.transform.rotate(self.image, -self.facing)
-        size = pygame.Vector2(transformed.get_size())
-        screen.blit(transformed, self.position - (size / 2))
-
-
-@dataclass
-class Sprites:
-    sprites: Dict[int, Sprite] = field(default_factory=dict)
-
-    def add(self, sprite: Sprite) -> Sprite:
-        self.sprites[id(sprite)] = sprite
-        return sprite
-
-    def delete(self, sprite: Sprite):
-        del self.sprites[id(sprite)]
-
-    def draw(self, screen: pygame.Surface):
-        for sprite in self.sprites.values():
-            sprite.draw(screen)
-
-
-class GameEngine:
-    def __init__(self, video_size):
-        pygame.init()
-        self.screen = pygame.display.set_mode(video_size)
-        self.clock = pygame.time.Clock()
-        self.sprites = Sprites()
-
-    def loop(self):
-        ui_running = True
-        while ui_running:
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    ui_running = False
-
-            self.paint_ui()
-            pygame.display.flip()
-            self.backend()
-            self.clock.tick(60)
-
-        pygame.quit()
-
-    def paint_ui(self):
-        pass
-
-    def backend(self):
-        pass
 
 
 class RobotSprite:
@@ -101,17 +48,6 @@ class MyPlayground(Playground):
         self.game_engine.sprites.add(sprite)
 
 
-class MySandbox(SandBox):
-    def block_thread(self, block_thread: BlockThread):
-        self.playground.game_engine.block_thread(self, block_thread)
-
-
-@dataclass
-class BlockGenerator:
-    generator: Generator
-    sandbox: SandBox
-
-
 class RobotWarEngine(GameEngine):
     def __init__(self, video_size):
         super().__init__(video_size)
@@ -121,7 +57,7 @@ class RobotWarEngine(GameEngine):
         # Note that call_function doesn't block while the program runs. It loads a program into the VM and the execution
         # must be advanced by steps in backend()
         self.playground = MyPlayground(USER_FILENAME, game_engine=self)
-        sandbox = MySandbox(self.playground)
+        sandbox = ThreadBox(self.playground)
         self.playground.sandboxes = [sandbox]
         self.workers: List[BlockGenerator] = []
         module = Module("__main__")
