@@ -1,6 +1,6 @@
 """Opcode dictionary"""
 
-from robot_war.vm.instructions import classes, data, flow_control, imports, math, misc
+from robot_war.vm.instructions import classes, data, flow_control, imports, math, misc, except_handling
 
 OP_CODE_CLASSES = {
     "BINARY_ADD": math.BinaryAdd,
@@ -25,6 +25,9 @@ OP_CODE_CLASSES = {
     "DELETE_FAST": data.DeleteFast,
     "DELETE_GLOBAL": data.DeleteGlobal,
     "DELETE_SUBSCR": data.DeleteSubscript,
+    "DUP_TOP": data.DupTop,
+    "FOR_ITER": flow_control.ForIter,
+    "GET_ITER": flow_control.GetIter,
     "IMPORT_FROM": imports.ImportFrom,
     "IMPORT_NAME": imports.ImportName,
     "IMPORT_STAR": imports.ImportStar,
@@ -39,6 +42,7 @@ OP_CODE_CLASSES = {
     "JUMP_ABSOLUTE": flow_control.JumpAbsolute,
     "JUMP_BACKWARD": flow_control.JumpBackward,
     "JUMP_FORWARD": flow_control.JumpForward,
+    "JUMP_IF_NOT_EXC_MATCH": except_handling.JumpIfNotExcMatch,
     "LIST_EXTEND": data.ListExtend,
     "LOAD_ATTR": classes.LoadAttribute,
     "LOAD_BUILD_CLASS": classes.LoadBuildClass,
@@ -55,16 +59,21 @@ OP_CODE_CLASSES = {
     "LOAD_SUBSCR": data.LoadSubscript,
     "MAKE_FUNCTION": classes.MakeFunction,
     "NOP": misc.Nop,
+    "POP_BLOCK": except_handling.PopBlock,
+    "POP_EXCEPT": except_handling.PopExcept,
     "POP_JUMP_IF_FALSE": flow_control.PopJumpIfFalse,
     "POP_JUMP_IF_NONE": flow_control.PopJumpIfNone,
     "POP_JUMP_IF_NOT_NONE": flow_control.PopJumpIfNotNone,
     "POP_JUMP_IF_TRUE": flow_control.PopJumpIfTrue,
     "POP_TOP": data.PopTop,
-    "RAISE_VARARGS": flow_control.RaiseVarArgs,
+    "RERAISE": except_handling.Reraise,
+    "RAISE_VARARGS": except_handling.RaiseVarArgs,
     "RESUME": misc.Nop,
     "RETURN_VALUE": flow_control.ReturnValue,
     "SET_UPDATE": data.SetUpdate,
     "SETUP_ANNOTATIONS": classes.SetupAnnotations,
+    "SETUP_FINALLY": except_handling.SetupFinally,
+    "SETUP_WITH": except_handling.SetupWith,
     "STORE_ATTR": classes.StoreAttribute,
     "STORE_DEREF": data.StoreDeref,
     "STORE_FAST": data.StoreFast,
@@ -74,5 +83,6 @@ OP_CODE_CLASSES = {
     "SWAP": data.Swap,
     "UNARY_INVERT": math.UnaryInvert,
     "UNARY_NEGATIVE": math.UnaryNegative,
-    "UNARY_NOT": math.UnaryNot
+    "UNARY_NOT": math.UnaryNot,
+    "WITH_EXCEPT_START": except_handling.WithExceptStart
 }

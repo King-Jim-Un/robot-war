@@ -101,8 +101,8 @@ def dump_func(function):
 
 
 def compare_external(base_module: str, args: List[str]):
-    base_path = CONSTANTS.TEST.PATH.EXTERNALS / f"{base_module}.py"
-    playground = Playground(CONSTANTS.TEST.PATH.EXTERNALS)
+    base_path = CONSTANTS.PATHS.TEST.EXTERNALS / f"{base_module}.py"
+    playground = Playground(CONSTANTS.PATHS.TEST.EXTERNALS)
     sys_mod = Module("sys", name_dict={"argv": [None] + args})
     module = Module("__main__", name_dict=dict(BUILT_INS), path=base_path)
     playground.all_modules = {"__main__": module, "sys": sys_mod}

@@ -1,12 +1,13 @@
 import logging
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import List, Any, Dict, Optional
+from typing import List, Any, Dict, Optional, Union
 
 from robot_war.api import API_CLASSES
 from robot_war.exceptions import DontPushReturnValue, TerminalError, BlockThread, RobotWarSystemExit
 from robot_war.vm.api_class import ApiClass
 from robot_war.vm.get_name import GetName
+from robot_war.vm.instructions.except_handling import WithOffset, TryOffset, VMException
 from robot_war.vm.instructions.flow_control import ReturnException
 from robot_war.vm.source_class import SourceClass, SourceInstance, BoundMethod, Constructor
 from robot_war.vm.source_functions import Function
@@ -31,6 +32,7 @@ class FunctionContext:
     get_name_obj: Optional[GetName] = None
     data_stack: List[Any] = field(default_factory=list)
     pc: int = 0
+    try_stack: List[Union[TryOffset, WithOffset]] = field(default_factory=list)
 
 
 @dataclass(repr=False)
@@ -55,6 +57,7 @@ class Playground:
 class SandBox:
     playground: Playground
     call_stack: List[FunctionContext] = field(default_factory=list)
+    handling_exception: Optional[VMException] = None
 
     def __repr__(self):
         return f"Sandbox({self.playground}, {len(self.call_stack)} call entries"
@@ -150,6 +153,10 @@ class SandBox:
                 self.push(rc.value)
             else:
                 raise
+        except Exception as error:
+            traceback = [(context.function, context.pc) for context in self.call_stack]
+            self.handling_exception = VMException(error, traceback)
+            self.next_except_handler()
 
     def exec_through(self) -> int:
         try:
@@ -204,3 +211,18 @@ class SandBox:
 
     def block_thread(self, block_thread: BlockThread):
         raise NotImplementedError()
+
+    def next_except_handler(self):
+        # Any handlers left?
+        while not self.context.try_stack:
+            self.call_stack.pop()
+            if not self.call_stack:
+                raise self.handling_exception
+
+        # Yes, go there
+        try_pos = self.context.try_stack[-1]
+        del self.context.data_stack[try_pos.stack_depth:]
+        self.push(self.handling_exception.traceback)
+        self.push(self.handling_exception.exception)
+        self.push(self.handling_exception.exception)
+        self.context.pc = try_pos.offset
