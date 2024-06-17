@@ -136,9 +136,13 @@ class PopExcept(CodeLine):
 class RaiseVarArgs(CodeLine):
     def exec(self, sandbox: SandBox):
         super().exec(sandbox)
-        assert self.operand != 0, "TODO: re-raise"
-        assert self.operand != 2, "TODO: raise with cause"
-        raise sandbox.pop()
+        if self.operand == 0:
+            # re-raise
+            sandbox.context.try_stack.pop()
+            sandbox.next_except_handler()
+        else:
+            assert self.operand != 2, "TODO: raise with cause"
+            raise sandbox.pop()
 
 
 class Reraise(CodeLine):

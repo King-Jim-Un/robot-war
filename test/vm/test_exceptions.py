@@ -141,4 +141,4 @@ def test_with2():
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
-    test_exception2()
+    test_exception5()

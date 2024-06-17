@@ -154,6 +154,7 @@ class SandBox:
             else:
                 raise
         except Exception as error:
+            # TODO: Exception in an exception handler
             traceback = [(context.function, context.pc) for context in self.call_stack]
             self.handling_exception = VMException(error, traceback)
             self.next_except_handler()
