@@ -16,7 +16,7 @@ LOG = logging.getLogger(__name__)
 SEARCH_NUM_ARGS = re.compile(r"^Argument count:\s+(\d+)", re.MULTILINE)
 SEARCH_VAR_NAMES1 = re.compile(r"^Variable names:(.*)", re.MULTILINE | re.DOTALL)
 SEARCH_VAR_NAMES2 = re.compile(r"(.*?)^\S", re.MULTILINE | re.DOTALL)
-SEARCH_VAR_NAMES3 = re.compile(r"(\d+): (\w+)")
+SEARCH_VAR_NAMES3 = re.compile(r"(\d+): (.+)")
 
 
 @dataclass(repr=False)

@@ -55,6 +55,15 @@ class BuildList(CodeLine):
         sandbox.push(values)
 
 
+class BuildMap(CodeLine):
+    def exec(self, sandbox: SandBox):
+        super().exec(sandbox)
+        context = sandbox.context
+        num_items = self.operand * 2
+        context.data_stack, values = context.data_stack[:-num_items], context.data_stack[-num_items:]
+        sandbox.push({values[i]: values[i + 1] for i in range(0, num_items, 2)})
+
+
 class BuildSet(CodeLine):
     def exec(self, sandbox: SandBox):
         super().exec(sandbox)
@@ -132,6 +141,14 @@ class GetLength(CodeLine):
         sandbox.push(len(sandbox.peek(-1)))
 
 
+class ListAppend(CodeLine):
+    def exec(self, sandbox: SandBox):
+        super().exec(sandbox)
+        item = sandbox.pop()
+        the_list: list = sandbox.peek(-self.operand)
+        the_list.append(item)
+
+
 class ListExtend(CodeLine):
     def exec(self, sandbox: SandBox):
         super().exec(sandbox)
@@ -193,10 +210,27 @@ class LoadSubscript(CodeLine):
         sandbox.push(container[key])
 
 
+class MapAdd(CodeLine):
+    def exec(self, sandbox: SandBox):
+        super().exec(sandbox)
+        value = sandbox.pop()
+        key = sandbox.pop()
+        the_dict: dict = sandbox.peek(-self.operand)
+        the_dict[key] = value
+
+
 class PopTop(CodeLine):
     def exec(self, sandbox: SandBox):
         super().exec(sandbox)
         sandbox.pop()
+
+
+class SetAdd(CodeLine):
+    def exec(self, sandbox: SandBox):
+        super().exec(sandbox)
+        item = sandbox.pop()
+        the_set: set = sandbox.peek(-self.operand)
+        the_set.add(item)
 
 
 class SetUpdate(CodeLine):
@@ -245,5 +279,5 @@ class StoreSlice(CodeLine):
 class Swap(CodeLine):
     def exec(self, sandbox: SandBox):
         super().exec(sandbox)
-        data_stack = sandbox.context.data_stack
-        data_stack[-self.operand], data_stack[-1] = data_stack[-1], data_stack[-self.operand]
+        ctext = sandbox.context
+        ctext.data_stack[-self.operand], ctext.data_stack[-1] = ctext.data_stack[-1], ctext.data_stack[-self.operand]

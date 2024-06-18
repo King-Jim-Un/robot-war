@@ -99,6 +99,13 @@ def test_store_global():
     G_GLOBAL = 1
 
 
+@compare_in_vm
+def test_build_map():
+    b = 10
+    a = {b: 2, 3: 4}
+    print(a)
+
+
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
     test_set()
