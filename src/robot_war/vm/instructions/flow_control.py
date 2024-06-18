@@ -81,26 +81,26 @@ class PopJumpIfFalse(CodeLine):
 
 class PopJumpIfNone(CodeLine):
     def exec(self, sandbox: SandBox):
+        super().exec(sandbox)
         value = sandbox.pop()
         if value is None:
             sandbox.context.pc = self.operand
-        super().exec(sandbox)
 
 
 class PopJumpIfNotNone(CodeLine):
     def exec(self, sandbox: SandBox):
+        super().exec(sandbox)
         value = sandbox.pop()
         if value is not None:
             sandbox.context.pc = self.operand
-        super().exec(sandbox)
 
 
 class PopJumpIfTrue(CodeLine):
     def exec(self, sandbox: SandBox):
+        super().exec(sandbox)
         value = sandbox.pop()
         if value:
-            sandbox.pc = self.operand
-        super().exec(sandbox)
+            sandbox.context.pc = self.operand
 
 
 class ReturnValue(CodeLine):

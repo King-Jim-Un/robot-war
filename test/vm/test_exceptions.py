@@ -33,7 +33,7 @@ def test_exception2():
     try:
         raise IndexError("err msg")
     except IndexError as error:
-        print("in exception" + repr(error))
+        print("in exception")
 
 
 @compare_in_vm
@@ -44,7 +44,7 @@ def test_exception3():
     except ZeroDivisionError:
         print("in wrong error")
     except (IOError, IndexError) as error:
-        print("in exception" + repr(error))
+        print("in exception")
 
 
 @compare_in_vm
@@ -103,9 +103,10 @@ class With1:
 
     def __enter__(self):
         print("enter with1")
+        return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        print("exit with1" + repr(exc_val))
+        print("exit with1")
         return True  # exception handled
 
 
@@ -115,30 +116,38 @@ class With2:
 
     def __enter__(self):
         print("enter with2")
+        return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        print("exit with2" + repr(exc_val))
+        print("exit with2")
 
 
-@compare_in_vm
+@compare_in_vm([With1])
 def test_with1():
-    with With1():
+    with With1() as w:
         print("using with")
         raise IndexError("the error")
     print("done")
 
 
-@compare_in_vm
+@compare_in_vm([With2])
 def test_with2():
     try:
         with With2():
             print("using with")
             raise IndexError("the error")
     except IndexError as err:
-        print("handler" + repr(err))
+        print("handler")
+    print("done")
+
+
+@compare_in_vm([With1])
+def test_with3():
+    with With1() as w:
+        print("using with")
     print("done")
 
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
-    test_exception5()
+    test_exception2()

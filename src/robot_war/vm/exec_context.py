@@ -96,15 +96,15 @@ class SandBox:
                 # and the arguments we received.
                 init_func = function.get_name("__init__")
                 fast_stack = self.args_to_fast(init_func, init_func, instance, *args, **kwargs)
-                num_args = len(fast_stack) - 2  # not counting init_func and instance
-                arg_names = ["init_func", "instance"] + [f"arg{index}" for index in range(num_args)]
+                num_args = len(fast_stack) - 1  # not counting init_func
+                arg_names = ["init_func", "instance"] + [f"arg{index}" for index in range(num_args - 1)]
 
                 # Create the wrapper function
                 with Function("__wrapper__", arg_names) as wrapper:
                     # Load the parameters and call the __init__
                     wrapper.LOAD_FAST("init_func")
                     wrapper.LOAD_FAST("instance")
-                    for index in range(num_args):
+                    for index in range(num_args - 1):
                         wrapper.LOAD_FAST(f"arg{index}")
                     wrapper.CALL_FUNCTION(num_args)
 
@@ -165,6 +165,8 @@ class SandBox:
                 self.step()
         except RobotWarSystemExit as rc:
             return rc.return_code
+        except VMException as error:
+            raise error.exception
 
     def next(self):
         self.context.pc += CODE_STEP

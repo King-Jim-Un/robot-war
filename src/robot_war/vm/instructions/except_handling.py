@@ -124,7 +124,9 @@ class JumpIfNotExcMatch(CodeLine):
 class PopBlock(CodeLine):
     def exec(self, sandbox: SandBox):
         super().exec(sandbox)
-        sandbox.context.try_stack.pop()
+        with_offset = sandbox.context.try_stack.pop()
+        if isinstance(with_offset, WithOffset):
+            sandbox.push(with_offset.instance.get_name("__exit__"))
 
 
 class PopExcept(CodeLine):
@@ -165,11 +167,12 @@ class SetupWith(CodeLine):
         instance = sandbox.pop()
         with_offset = WithOffset(sandbox.context.pc + self.operand, len(sandbox.context.data_stack), instance)
         sandbox.context.try_stack.append(with_offset)
-        sandbox.call_function(instance.get_name("__enter__"))
+        sandbox.call_function(instance.get_name("__enter__"), instance)
 
 
 class WithExceptStart(CodeLine):
     def exec(self, sandbox: SandBox):
         super().exec(sandbox)
         instance = sandbox.context.try_stack[-1].instance
+        sandbox.push(instance)
         sandbox.call_function(instance.get_name("__exit__"), sandbox.peek(-1), sandbox.peek(-2), sandbox.peek(-3))
