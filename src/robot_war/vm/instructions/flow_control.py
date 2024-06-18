@@ -37,6 +37,22 @@ class CallMethod(CodeLine):
         sandbox.call_function(sandbox.pop(), *reversed(rev_args))
 
 
+class ForIter(CodeLine):
+    def exec(self, sandbox: SandBox):
+        super().exec(sandbox)
+        try:
+            sandbox.push(next(sandbox.peek(-1)))
+        except StopIteration:
+            sandbox.pop()
+            sandbox.context.pc += self.operand
+
+
+class GetIter(CodeLine):
+    def exec(self, sandbox: SandBox):
+        super().exec(sandbox)
+        sandbox.push(iter(sandbox.pop()))
+
+
 class JumpAbsolute(CodeLine):
     def exec(self, sandbox: SandBox):
         super().exec(sandbox)
@@ -65,34 +81,26 @@ class PopJumpIfFalse(CodeLine):
 
 class PopJumpIfNone(CodeLine):
     def exec(self, sandbox: SandBox):
+        super().exec(sandbox)
         value = sandbox.pop()
         if value is None:
             sandbox.context.pc = self.operand
-        super().exec(sandbox)
 
 
 class PopJumpIfNotNone(CodeLine):
     def exec(self, sandbox: SandBox):
+        super().exec(sandbox)
         value = sandbox.pop()
         if value is not None:
             sandbox.context.pc = self.operand
-        super().exec(sandbox)
 
 
 class PopJumpIfTrue(CodeLine):
     def exec(self, sandbox: SandBox):
+        super().exec(sandbox)
         value = sandbox.pop()
         if value:
-            sandbox.pc = self.operand
-        super().exec(sandbox)
-
-
-class RaiseVarArgs(CodeLine):
-    def exec(self, sandbox: SandBox):
-        super().exec(sandbox)
-        assert self.operand != 0, "TODO: re-raise"
-        assert self.operand != 2, "TODO: raise with cause"
-        raise sandbox.pop()
+            sandbox.context.pc = self.operand
 
 
 class ReturnValue(CodeLine):

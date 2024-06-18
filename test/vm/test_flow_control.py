@@ -44,17 +44,31 @@ def test_jumps_1():
     return a
 
 
-@run_in_vm
-def raise_exception():
-    raise IndexError()
+@compare_in_vm
+def test_for_loops():
+    for a in "hello":
+        print(a)
+    else:
+        print("world")
+
+    for i in range(10):
+        if i == 3:
+            continue
+        if i == 6:
+            break
+        print(i)
 
 
-class TestFlowControl(TestCase):
-    def test_exception(self):
-        with self.assertRaises(IndexError):
-            raise_exception()
+@compare_in_vm
+def test_nested_loops():
+    for i in range(4):
+        for j in range(3):
+            for k in range(4):
+                if (i + j + k) == 6:
+                    break
+                print(i, j, k)
 
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
-    TestFlowControl().test_exception()
+    test_for_loops()

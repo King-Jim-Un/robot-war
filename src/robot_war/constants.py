@@ -14,4 +14,4 @@ class CONSTANTS:
         FIREBALL_IMAGE = ROOT / "assets" / "fireball1.png"
 
         class TEST:
-            EXTERNALS = Path(__file__).parents[4] / "test" / "externals"
+            EXTERNALS = Path(__file__).parents[2] / "test" / "externals"

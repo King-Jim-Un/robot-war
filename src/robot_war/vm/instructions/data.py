@@ -120,6 +120,12 @@ class DeleteSubscript(CodeLine):
         del container[key]
 
 
+class DupTop(CodeLine):
+    def exec(self, sandbox: SandBox):
+        super().exec(sandbox)
+        sandbox.push(sandbox.peek(-1))
+
+
 class GetLength(CodeLine):
     def exec(self, sandbox: SandBox):
         super().exec(sandbox)
