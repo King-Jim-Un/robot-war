@@ -3,8 +3,9 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List, Any, Dict, Optional, Union
 
-from robot_war.api import API_CLASSES
-from robot_war.exceptions import DontPushReturnValue, TerminalError, BlockThread, RobotWarSystemExit
+from robot_war.api import ROBOT_CLASSES, API_CLASSES
+from robot_war.exceptions import (DontPushReturnValue, TerminalError, BlockBase, RobotWarSystemExit, BlockGenerator,
+                                  BlockFunction, SandboxRequired)
 from robot_war.vm.api_class import ApiClass
 from robot_war.vm.get_name import GetName
 from robot_war.vm.instructions.except_handling import WithOffset, TryOffset, VMException
@@ -30,6 +31,7 @@ class FunctionContext:
     function: Function
     fast_stack: Dict[int, Any] = field(default_factory=dict)
     get_name_obj: Optional[GetName] = None
+    deref: Dict[int, Any] = field(default_factory=dict)
     data_stack: List[Any] = field(default_factory=list)
     pc: int = 0
     try_stack: List[Union[TryOffset, WithOffset]] = field(default_factory=list)
@@ -41,6 +43,7 @@ class Playground:
     all_modules: Dict[str, Module] = field(default_factory=dict)
     sandboxes: List["SandBox"] = field(default_factory=list)
     robot: Optional[ApiClass] = None
+    workers: List[BlockGenerator] = field(default_factory=list)
 
     def set_robot(self, robot: ApiClass):
         self.robot = robot
@@ -52,12 +55,48 @@ class Playground:
         return (f"Playground({str(self.root_path)}, {len(self.all_modules)} modules, {len(self.sandboxes)} sandboxes, "
                 f"{self.robot}")
 
+    def step_all(self):
+        index = 0
+        while index < len(self.sandboxes):
+            sandbox = self.sandboxes[index]
+            try:
+                sandbox.step()
+            except ReturnException:
+                del self.sandboxes[index]
+            except BlockGenerator as block_generator:
+                block_generator.sandbox = sandbox
+                del self.sandboxes[index]
+                self.workers.append(block_generator)
+            except BlockFunction:
+                del self.sandboxes[index]
+            else:
+                index += 1
+
+        index = 0
+        while index < len(self.workers):
+            worker = self.workers[index]
+            try:
+                next(worker.generator)
+            except StopIteration as stop:
+                worker.sandbox.push(stop.value)
+                del self.workers[index]
+                self.sandboxes.append(worker.sandbox)
+            else:
+                index += 1
+
+    def new_sandbox(self, function: Function) -> "SandBox":
+        sandbox = SandBox(self)
+        self.sandboxes.append(sandbox)
+        function.call_in_sandbox(sandbox)
+        return sandbox
+
 
 @dataclass(repr=False)
 class SandBox:
     playground: Playground
     call_stack: List[FunctionContext] = field(default_factory=list)
     handling_exception: Optional[VMException] = None
+    done: bool = False
 
     def __repr__(self):
         return f"Sandbox({self.playground}, {len(self.call_stack)} call entries"
@@ -75,8 +114,8 @@ class SandBox:
         if function.default_args:
             arg_list = arg_list[:-len(function.default_args)] + list(function.default_args)
 
-        # Specified values & closure
-        arg_list = list(args) + arg_list[len(args):] + list(function.closure)
+        # Specified values
+        arg_list = list(args) + arg_list[len(args):]
 
         # Keyword arguments
         for index, param_name in enumerate(function.code_block.param_names):
@@ -115,31 +154,42 @@ class SandBox:
                     wrapper.LOAD_FAST("instance")
                     wrapper.RETURN_VALUE()
 
-                self.call_stack.append(FunctionContext(wrapper, fast_stack, instance))
+                closure = {index: value for index, value in enumerate(init_func.closure)}
+                self.call_stack.append(FunctionContext(wrapper, fast_stack, instance, closure))
             except KeyError:
                 self.push(instance)  # No __init__()
 
         elif isinstance(function, Constructor):
             fast_stack = self.args_to_fast(function, *args, **kwargs)
-            self.call_stack.append(FunctionContext(function, fast_stack, function.source_class))
+            closure = {index: value for index, value in enumerate(function.closure)}
+            self.call_stack.append(FunctionContext(function, fast_stack, function.source_class, closure))
 
         elif isinstance(function, BoundMethod):
             fast_stack = self.args_to_fast(function, function.instance, *args, **kwargs)
-            self.call_stack.append(FunctionContext(function, fast_stack, function.instance))
+            closure = {index: value for index, value in enumerate(function.closure)}
+            self.call_stack.append(FunctionContext(function, fast_stack, function.instance, closure))
 
         elif isinstance(function, Function):
             fast_stack = self.args_to_fast(function, *args, **kwargs)
-            self.call_stack.append(FunctionContext(function, fast_stack, function.code_block.module))
+            closure = {index: value for index, value in enumerate(function.closure)}
+            self.call_stack.append(FunctionContext(function, fast_stack, function.code_block.module, closure))
+
+        elif function in API_CLASSES:
+            self.push(function(_playground=self.playground))
+
+        # elif any(isinstance(function, api_class) for api_class in API_CLASSES):  TODO
+        #     class_list = list(parent_classes)
 
         else:
-            assert function not in API_CLASSES, "API classes must be subclassed, do not instantiate as-is"
+            assert function not in ROBOT_CLASSES, "Robot classes must be subclassed, do not instantiate as-is"
 
             try:
                 self.push(function(*args, **kwargs))
+            except SandboxRequired:
+                kwargs["sandbox"] = self
+                self.call_function(function, *args, **kwargs)
             except DontPushReturnValue:
                 pass
-            except BlockThread as block_thread:
-                self.block_thread(block_thread)
 
     def step(self):
         try:
@@ -148,11 +198,16 @@ class SandBox:
             instruction.exec(self)
             # self.context.function.code_block.code_lines[self.context.pc].exec(self)
         except ReturnException as rc:
-            assert not self.call_stack.pop().data_stack, "Data stack wasn't empty"
+            cs = self.call_stack.pop()
+            assert not cs.data_stack
+            # assert not self.call_stack.pop().data_stack, "Data stack wasn't empty"
             if self.call_stack:
                 self.push(rc.value)
             else:
+                self.done = True
                 raise
+        except BlockBase:
+            raise
         except Exception as error:
             # TODO: Exception in an exception handler
             traceback = [(context.function, context.pc) for context in self.call_stack]
@@ -183,7 +238,7 @@ class SandBox:
         LOG.debug("    push(%r)", self.peek(-1))
 
     def build_class(self, function: Function, name: str, *parent_classes):
-        num_api_parents = len([cls for cls in parent_classes if cls in API_CLASSES])
+        num_api_parents = len([cls for cls in parent_classes if cls in ROBOT_CLASSES])
         if num_api_parents == 0:
             class_list = list(parent_classes)
         elif num_api_parents == 1:
@@ -212,14 +267,12 @@ class SandBox:
         wrapper.call_in_sandbox(self)
         raise DontPushReturnValue()
 
-    def block_thread(self, block_thread: BlockThread):
-        raise NotImplementedError()
-
     def next_except_handler(self):
         # Any handlers left?
         while not self.context.try_stack:
             self.call_stack.pop()
             if not self.call_stack:
+                self.done = True
                 raise self.handling_exception
 
         # Yes, go there

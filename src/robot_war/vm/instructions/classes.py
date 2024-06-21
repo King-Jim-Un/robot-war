@@ -46,16 +46,16 @@ class MakeFunction(CodeLine):
         code_block = sandbox.pop()
         from robot_war.vm.source_functions import Function
         function = Function(name, code_block=code_block)
-        if self.operand & 0x01:
-            function.default_args = sandbox.pop()
-        if self.operand & 0x02:
-            LOG.error("TODO: Handle keyword values")
-            sandbox.pop()
+        if self.operand & 0x08:
+            function.closure = sandbox.pop()
         if self.operand & 0x04:
             # Ignore annotations
             sandbox.pop()
-        if self.operand & 0x08:
-            function.closure = sandbox.pop()
+        if self.operand & 0x02:
+            LOG.error("TODO: Handle keyword values")
+            sandbox.pop()
+        if self.operand & 0x01:
+            function.default_args = sandbox.pop()
         sandbox.push(function)
 
 

@@ -46,6 +46,7 @@ OP_CODE_CLASSES = {
     "JUMP_IF_NOT_EXC_MATCH": except_handling.JumpIfNotExcMatch,
     "LIST_APPEND": data.ListAppend,
     "LIST_EXTEND": data.ListExtend,
+    "LOAD_ASSERTION_ERROR": except_handling.LoadAssertionError,
     "LOAD_ATTR": classes.LoadAttribute,
     "LOAD_BUILD_CLASS": classes.LoadBuildClass,
     "LOAD_CLOSURE": data.LoadClosure,

@@ -2,8 +2,8 @@ from dataclasses import dataclass
 import logging
 from pygame import Vector2
 
-from robot_war.exceptions import BlockThread
-from robot_war.vm.api_class import ApiClass
+from robot_war.exceptions import BlockGenerator
+from robot_war.vm.api_class import RobotApi
 from robot_war.vm.source_module import Module
 
 # Constants:
@@ -14,7 +14,7 @@ FIRE_PER_TICK = 20.0
 
 
 @dataclass
-class Robot(ApiClass):
+class Robot(RobotApi):
     # NOTE: START MEMBER NAMES WITH AN UNDERSCORE UNLESS IT'S OKAY FOR THE USER TO ACCESS THEM!
 
     def turn_right(self, angle):
@@ -27,7 +27,7 @@ class Robot(ApiClass):
                 yield
             self.facing = stop_facing
 
-        raise BlockThread(turn())
+        raise BlockGenerator(turn())
 
     def forward(self, distance):
         LOG.warning("forward(%f)", distance)
@@ -41,7 +41,7 @@ class Robot(ApiClass):
                 yield
             self.position = stop
 
-        raise BlockThread(move())
+        raise BlockGenerator(move())
 
     def shoot(self, distance):
         LOG.warning("shoot(%f)", distance)
@@ -58,7 +58,7 @@ class Robot(ApiClass):
             fireball.position = stop
             game_engine.delete_sprite(fireball)
 
-        raise BlockThread(move())
+        raise BlockGenerator(move())
 
 
 MODEL0_MODULE = Module("model0", name_dict={"Robot": Robot})

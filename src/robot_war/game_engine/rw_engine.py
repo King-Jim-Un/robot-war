@@ -5,7 +5,7 @@ from time import monotonic
 from typing import Optional, List
 
 from robot_war.constants import CONSTANTS
-from robot_war.exceptions import RobotWarSystemExit, BlockThread, ReturnException
+from robot_war.exceptions import RobotWarSystemExit, BlockGenerator, ReturnException
 from robot_war.game_engine.base_game_engine import GameEngine
 from robot_war.game_engine.game_threads import BlockGenerator, ThreadBox
 from robot_war.game_engine.sprites import Sprite
@@ -99,12 +99,12 @@ class RWEngine(GameEngine):
         if not alive:
             self.clock.tick(CONSTANTS.TIMING.FRAME_RATE)
 
-    def block_thread(self, sandbox: SandBox, block_thread: BlockThread):
+    def block_generator(self, sandbox: SandBox, block_generator: BlockGenerator):
         # Find the sandbox
         for index, the_sandbox in enumerate(self.playground.sandboxes):
             if sandbox is the_sandbox:
                 del self.playground.sandboxes[index]
-                self.workers.append(BlockGenerator(block_thread.generator, sandbox))
+                self.workers.append(BlockGenerator(block_generator.generator, sandbox))
                 break
         else:
             raise KeyError("sandbox not found")

@@ -125,8 +125,8 @@ class RelativeMember:
 class OperandMember:
     """
     Used below to add the following to the function creator:
-        BUILD_LIST, BUILD_TUPLE, CALL_FUNCTION, LOAD_MODULE_FILE_1, LOAD_MODULE_FILE_2, LOAD_SUBSCR, POP_TOP,
-        RAISE_VARARGS, and RETURN_VALUE
+        BUILD_LIST, BUILD_TUPLE, CALL_FUNCTION, CALL_FUNCTION_KW, LOAD_MODULE_FILE_1, LOAD_MODULE_FILE_2, LOAD_SUBSCR,
+        POP_TOP, RAISE_VARARGS, and RETURN_VALUE
     """
     function: "Function"
     name: str
@@ -146,8 +146,8 @@ class Function:
     name: str
     arg_names: List[str] = field(default_factory=list)
     code_block: CodeBlock = field(default_factory=CodeBlock)
-    closure: tuple = ()
     default_args: tuple = ()
+    closure: tuple = ()
     constants: List[str] = field(default_factory=list)
     labels: Dict[str, int] = field(default_factory=dict)
     redo: List[Tuple[int, Callable, str]] = field(default_factory=list)
@@ -168,8 +168,8 @@ class Function:
     def add_operand_member(self, name: str):
         """
         Used below to add the following to the function creator:
-            BUILD_LIST, BUILD_TUPLE, CALL_FUNCTION, LOAD_MODULE_FILE_1, LOAD_MODULE_FILE_2, LOAD_SUBSCR, POP_TOP,
-            RAISE_VARARGS, and RETURN_VALUE
+            BUILD_LIST, BUILD_TUPLE, CALL_FUNCTION, CALL_FUNCTION_KW, LOAD_MODULE_FILE_1, LOAD_MODULE_FILE_2,
+            LOAD_SUBSCR, POP_TOP, RAISE_VARARGS, and RETURN_VALUE
         """
         setattr(self, name, OperandMember(self, name))
 
@@ -184,8 +184,8 @@ class Function:
         self.add_note_member("LOAD_NAME")
         self.add_note_member("LOAD_MODULE_FILE_3")
         self.add_absolute_branch("POP_JUMP_IF_FALSE")
-        for name in ["BUILD_LIST", "BUILD_TUPLE", "CALL_FUNCTION", "LOAD_MODULE_FILE_1", "LOAD_MODULE_FILE_2",
-                     "LOAD_SUBSCR", "POP_TOP", "RAISE_VARARGS", "RETURN_VALUE"]:
+        for name in ["BUILD_LIST", "BUILD_TUPLE", "CALL_FUNCTION", "CALL_FUNCTION_KW", "LOAD_MODULE_FILE_1",
+                     "LOAD_MODULE_FILE_2", "LOAD_SUBSCR", "POP_TOP", "RAISE_VARARGS", "RETURN_VALUE"]:
             self.add_operand_member(name)
         self.code_block.num_params = len(self.arg_names)
         return self

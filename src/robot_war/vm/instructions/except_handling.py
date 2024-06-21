@@ -121,6 +121,12 @@ class JumpIfNotExcMatch(CodeLine):
             sandbox.context.pc = self.operand
 
 
+class LoadAssertionError(CodeLine):
+    def exec(self, sandbox: SandBox):
+        super().exec(sandbox)
+        sandbox.push(AssertionError)
+
+
 class PopBlock(CodeLine):
     def exec(self, sandbox: SandBox):
         super().exec(sandbox)

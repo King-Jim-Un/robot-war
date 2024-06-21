@@ -86,8 +86,11 @@ class ImportName(CodeLine):
         parts: List[str] = self.note.split(".")
         # ["x", "y", "z"]: import x.y.z
 
+        from robot_war.api import MODULES
         if (level == 0) and (parts[0] == ROBOT_WAR):
             self.load_api(sandbox, parts)
+        elif (level == 0) and (parts[0] in MODULES):
+            self.load_native_module(sandbox, parts)
         else:
             from robot_war.vm.source_functions import Function
             modules_loaded, tuples_to_load, mod_path = self.find_load_files(sandbox, level, parts, from_list)
@@ -120,10 +123,20 @@ class ImportName(CodeLine):
             # TODO: Need to be some sort of mechanism to verify that we actually imported the name
 
     @staticmethod
+    def load_native_module(sandbox: SandBox, parts: List[str]):
+        from robot_war.api import MODULES
+        module = MODULES[parts[0]]
+        sandbox.push(module)
+        if len(parts) == 2:
+            assert parts[1] in module.name_dict
+        elif len(parts) != 1:
+            raise ImportError(f"Unable to import {'.'.join(parts)}")
+
+    @staticmethod
     def load_api(sandbox: SandBox, parts: List[str]):
         if parts == [ROBOT_WAR]:
-            from robot_war.api import API_MODULE
-            sandbox.push(API_MODULE)
+            from robot_war.api import ROBOT_MODULE
+            sandbox.push(ROBOT_MODULE)
         elif len(parts) == 2:
             from robot_war.api import MODELS
             sandbox.push(MODELS[parts[1]])

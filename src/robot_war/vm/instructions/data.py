@@ -51,7 +51,10 @@ class BuildList(CodeLine):
     def exec(self, sandbox: SandBox):
         super().exec(sandbox)
         data_stack = sandbox.context.data_stack
-        sandbox.context.data_stack, values = data_stack[:-self.operand], data_stack[-self.operand:]
+        if self.operand:
+            sandbox.context.data_stack, values = data_stack[:-self.operand], data_stack[-self.operand:]
+        else:
+            values = []
         sandbox.push(values)
 
 
@@ -162,7 +165,7 @@ class ListExtend(CodeLine):
 class LoadClosure(CodeLine):
     def exec(self, sandbox: SandBox):
         super().exec(sandbox)
-        sandbox.push(sandbox.context.fast_stack[sandbox.context.function.code_block.num_params + self.operand])
+        sandbox.push(sandbox.context.deref[self.operand])
 
 
 class LoadDeref(LoadClosure):
@@ -182,7 +185,7 @@ class LoadConstant(CodeLine):
                 constants[self.operand] = sandbox.context.function.code_block.module.get_name(self.note)
             else:
                 # Something simple, just eval it
-                from pathlib import WindowsPath  # Should allow us to eval a constant path
+                from pathlib import WindowsPath  # noqa Should allow us to eval a constant path
                 constants[self.operand] = eval(self.note)
 
         sandbox.push(constants[self.operand])
@@ -206,7 +209,6 @@ class LoadSubscript(CodeLine):
         super().exec(sandbox)
         key = sandbox.pop()
         container = sandbox.pop()
-        LOG.warning("%r[%r]",container,key)
         sandbox.push(container[key])
 
 
@@ -264,7 +266,7 @@ class StoreSubscript(CodeLine):
 class StoreDeref(CodeLine):
     def exec(self, sandbox: SandBox):
         super().exec(sandbox)
-        sandbox.context.fast_stack[sandbox.context.function.code_block.num_params + self.operand] = sandbox.pop()
+        sandbox.context.deref[self.operand] = sandbox.pop()
 
 
 class StoreSlice(CodeLine):
