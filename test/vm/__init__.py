@@ -56,6 +56,8 @@ def compare_in_vm(function1=None, functions: Optional[List[Callable]] = None, gl
         with capture_stdout() as standard_io:
             standard_return = function1()
         assert standard_return == vm_return
+        LOG.debug("s=%r", standard_io.getvalue())
+        LOG.debug("v=%r", vm_io.getvalue())
         assert standard_io.getvalue() == vm_io.getvalue()
         if not conftest.G_CALLED_FROM_TEST:
             sys.stdout.write(vm_io.getvalue())
