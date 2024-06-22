@@ -44,11 +44,11 @@ def test_thread_subclass():
 
         def run(self):
             self.start(self.thread, 15, 20)
-            assert self.join == 45
+            assert self.join() == 45
 
     MyThread().run()
 
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
-    test_thread()
+    test_thread_subclass()

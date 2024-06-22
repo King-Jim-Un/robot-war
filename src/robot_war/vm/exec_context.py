@@ -177,9 +177,6 @@ class SandBox:
         elif function in API_CLASSES:
             self.push(function(_playground=self.playground))
 
-        # elif any(isinstance(function, api_class) for api_class in API_CLASSES):  TODO
-        #     class_list = list(parent_classes)
-
         else:
             assert function not in ROBOT_CLASSES, "Robot classes must be subclassed, do not instantiate as-is"
 
@@ -247,6 +244,10 @@ class SandBox:
             self.playground.set_robot(class_list[0])
         else:
             raise TerminalError("Robots can only inherit from a single API class")
+
+        for index, parent in enumerate(class_list):
+            if parent in API_CLASSES:
+                class_list[index] = parent(_playground=self.playground)
         source_class = SourceClass({"__name__": name}, class_list, function.code_block.module)
 
         # Run the creation code function to set up our new class. Of course, the creation code just returns None, and we
