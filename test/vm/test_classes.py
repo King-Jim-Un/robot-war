@@ -52,6 +52,8 @@ def test_double_inheritance():
     return obj.f()
 
 
+# TODO: isinstance, hasattr
+
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
     test_double_inheritance()

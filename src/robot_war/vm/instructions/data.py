@@ -138,6 +138,21 @@ class DupTop(CodeLine):
         sandbox.push(sandbox.peek(-1))
 
 
+class FormatValue(CodeLine):
+    def exec(self, sandbox: SandBox):
+        super().exec(sandbox)
+        format_str = sandbox.pop() if self.operand & 0x04 else None
+        value = sandbox.pop()
+        flags3 = self.operand & 0x03
+        if flags3 == 0x01:
+            value = str(value)
+        elif flags3 == 0x02:
+            value = repr(value)
+        elif flags3 == 0x03:
+            value = repr(value)  # Not real clear on converting to ascii
+        sandbox.push(str(value) if format_str is None else f"{value:{format_str}}")
+
+
 class GetLength(CodeLine):
     def exec(self, sandbox: SandBox):
         super().exec(sandbox)

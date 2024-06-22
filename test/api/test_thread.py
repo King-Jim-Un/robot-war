@@ -31,7 +31,22 @@ def test_thread():
     assert thread2.join() == 2
     assert log == ["starting in main thread", "in func1 arg=ARRGH", "in func2 and done", "func1 done"]
 
-# TODO: Test subclassing Thread
+
+@run_in_vm
+def test_thread_subclass():
+    from thread import Thread
+
+    class MyThread(Thread):
+        const = 10
+
+        def thread(self, arg1, arg2):
+            return self.const + arg1 + arg2
+
+        def run(self):
+            self.start(self.thread, 15, 20)
+            assert self.join == 45
+
+    MyThread().run()
 
 
 if __name__ == "__main__":

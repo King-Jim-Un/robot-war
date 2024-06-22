@@ -4,6 +4,7 @@ from robot_war.vm.instructions import classes, data, flow_control, imports, math
 
 OP_CODE_CLASSES = {
     "BINARY_ADD": math.BinaryAdd,
+    "BINARY_MODULO": math.BinaryModulo,
     "BINARY_MULTIPLY": math.BinaryMultiply,
     "BINARY_SUBTRACT": math.BinarySubtract,
     "BINARY_FLOOR_DIVIDE": math.BinaryFloorDivide,
@@ -28,6 +29,7 @@ OP_CODE_CLASSES = {
     "DELETE_SUBSCR": data.DeleteSubscript,
     "DUP_TOP": data.DupTop,
     "FOR_ITER": flow_control.ForIter,
+    "FORMAT_VALUE": data.FormatValue,
     "GET_ITER": flow_control.GetIter,
     "IMPORT_FROM": imports.ImportFrom,
     "IMPORT_NAME": imports.ImportName,

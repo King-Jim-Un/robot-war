@@ -19,6 +19,14 @@ class BinaryAdd(CodeLine):
         sandbox.push(arg1 + arg2)
 
 
+class BinaryModulo(CodeLine):
+    def exec(self, sandbox: SandBox):
+        super().exec(sandbox)
+        arg2 = sandbox.pop()
+        arg1 = sandbox.pop()
+        sandbox.push(arg1 % arg2)
+
+
 class BinaryMultiply(CodeLine):
     def exec(self, sandbox: SandBox):
         super().exec(sandbox)
