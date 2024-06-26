@@ -77,13 +77,9 @@ class Module(GetName, Function):
             var_name_dict = {int(index): name for index, name in SEARCH_VAR_NAMES3.findall(var_name_str)}
             code_block.param_names = [var_name_dict[index] for index in range(code_block.num_params)]
 
-        # Function
-        function = Function(code.co_name, code_block.param_names, code_block)
-        self.set_name(code.co_name, function)  # save function (code block wrapped up for use in Python)
-
         # Grab other code blocks
         for constant in code.co_consts:
             if isinstance(constant, CODE_CLASS):
                 self.add_code(constant)
 
-        return function
+        return Function(code.co_name, code_block.param_names, code_block)

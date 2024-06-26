@@ -13,13 +13,13 @@ def raise_exception():
 
 
 class TestException(TestCase):
-    def test_exception(self):
+    def test_exception1(self):
         with self.assertRaises(IndexError):
             raise_exception()
 
 
 @compare_in_vm
-def test_exception1():
+def test_exception2():
     print("before exception")
     try:
         raise IndexError()
@@ -28,7 +28,7 @@ def test_exception1():
 
 
 @compare_in_vm
-def test_exception2():
+def test_exception3():
     print("before exception")
     try:
         raise IndexError("err msg")
@@ -37,7 +37,7 @@ def test_exception2():
 
 
 @compare_in_vm
-def test_exception3():
+def test_exception4():
     print("before exception")
     try:
         raise IndexError("err msg")
@@ -48,7 +48,7 @@ def test_exception3():
 
 
 @compare_in_vm
-def test_exception4():
+def test_exception5():
     print("before exception 1")
     try:
         print("before exception 2")
@@ -64,7 +64,7 @@ def test_exception4():
 
 
 @compare_in_vm
-def test_exception5():
+def test_exception6():
     print("before exception 1")
     try:
         print("before exception 2")
@@ -89,7 +89,7 @@ def sub1():
 
 
 @compare_in_vm([sub1, sub2])
-def test_exception6():
+def test_exception7():
     print("before exception")
     try:
         sub1()
@@ -150,4 +150,4 @@ def test_with3():
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
-    test_exception2()
+    TestException().test_exception1()

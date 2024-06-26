@@ -219,6 +219,8 @@ class SandBox:
             return rc.return_code
         except VMException as error:
             raise error.exception
+        except ReturnException as rc:
+            return rc.value
 
     def next(self):
         self.context.pc += CODE_STEP

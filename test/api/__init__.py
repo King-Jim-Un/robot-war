@@ -21,8 +21,10 @@ def run_in_vm(function1, functions: Optional[List[Callable]] = None):
         functions = []
 
     def wrapper():
-        module.add_standard_python_function(
+        constructor = module.add_standard_python_function(
             function1, *functions, replace=(SEARCH_DECORATOR1, "def"))
+        sandbox.call_function(constructor)
+        sandbox.exec_through()
         sandbox.call_function(module.get_name(function1.__name__))
 
         # while not sandbox.done:

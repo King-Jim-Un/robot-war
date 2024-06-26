@@ -43,10 +43,7 @@ def compare_in_vm(function1=None, functions: Optional[List[Callable]] = None, gl
 
     def execute(function2: Function):
         sandbox.call_function(function2)
-        try:
-            sandbox.exec_through()
-        except ReturnException as ret:
-            return ret.value
+        return sandbox.exec_through()
 
     def wrapper():
         execute(module.add_standard_python_function(function1, *functions,
@@ -77,8 +74,10 @@ def run_in_vm(function1, functions: Optional[List[Callable]] = None):
         functions = []
 
     def wrapper():
-        module.add_standard_python_function(
+        constructor = module.add_standard_python_function(
             function1, *functions, replace=(SEARCH_DECORATOR2, "def"))
+        sandbox.call_function(constructor)
+        sandbox.exec_through()
         sandbox.call_function(module.get_name(function1.__name__))
 
         try:

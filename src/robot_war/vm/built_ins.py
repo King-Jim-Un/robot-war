@@ -1,3 +1,5 @@
+import logging
+
 from robot_war.exceptions import RobotWarSystemExit
 
 
@@ -18,7 +20,7 @@ def rw_hasattr(obj, name: str) -> bool:
         try:
             obj.get_attr(name)
             return True
-        except IndexError:
+        except KeyError:
             return False
     else:
         return hasattr(obj, name)
