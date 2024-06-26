@@ -8,7 +8,7 @@ try:
     from robot_war.vm.exec_context import SandBox
     from robot_war.vm.source_module import Module
 except ImportError:
-    SandBox = Module = None
+    SandBox = Module = None  # type: ignore
 
 # Constants:
 LOG = logging.getLogger(__name__)

@@ -5,7 +5,7 @@ from typing import Optional
 try:
     from robot_war.vm.exec_context import SandBox
 except ImportError:
-    SandBox = None
+    SandBox = None  # type: ignore
 
 # Constants:
 LOG = logging.getLogger(__name__)

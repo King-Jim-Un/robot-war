@@ -5,7 +5,7 @@ try:
     from robot_war.vm.api_class import Waiter
     from robot_war.vm.exec_context import SandBox
 except ImportError:
-    Waiter = SandBox = None
+    Waiter = SandBox = None  # type: ignore
 
 
 @dataclass

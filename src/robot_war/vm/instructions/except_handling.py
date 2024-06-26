@@ -9,7 +9,7 @@ try:
     from robot_war.vm.get_name import GetName
     from robot_war.vm.source_functions import Function
 except ImportError:
-    SandBox = Function = GetName = None
+    SandBox = Function = GetName = None  # type: ignore
 
 # Constants:
 LOG = logging.getLogger(__name__)

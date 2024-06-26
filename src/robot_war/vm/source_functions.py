@@ -8,7 +8,7 @@ try:
     from robot_war.vm.exec_context import FunctionContext, SandBox
     from robot_war.vm.source_module import Module
 except ImportError:
-    Module = FunctionContext = Sandbox = None
+    Module = FunctionContext = Sandbox = None  # type: ignore
 
 # Types:
 CodeDict = Dict[str, "CodeBlock"]

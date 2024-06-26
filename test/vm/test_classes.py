@@ -1,7 +1,6 @@
 import logging
-from unittest import TestCase
 
-from test.vm import compare_in_vm, run_in_vm, dump_func
+from test.vm import compare_in_vm, dump_func
 
 # Constants:
 LOG = logging.getLogger(__name__)
@@ -88,4 +87,4 @@ def test_hasattr():
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
-    test_no_inheritance()
+    test_hasattr()

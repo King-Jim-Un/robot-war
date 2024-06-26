@@ -8,7 +8,7 @@ from robot_war.vm.source_functions import Function
 try:
     from robot_war.vm.source_module import Module
 except ImportError:
-    Module = None
+    Module = None  # type: ignore
 
 # Constants:
 LOG = logging.getLogger(__name__)

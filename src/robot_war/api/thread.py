@@ -9,7 +9,7 @@ try:
     from robot_war.vm.exec_context import SandBox
     from robot_war.vm.source_functions import Function
 except ImportError:
-    SandBox = Function = None
+    SandBox = Function = None  # type: ignore
 
 
 @dataclass

@@ -1,5 +1,5 @@
 import os
-from subprocess import run
+from subprocess import run, check_call
 from sys import executable
 from unittest import main, TestCase
 
@@ -12,26 +12,19 @@ class TestStatic(TestCase):
         os.environ["MYPYPATH"] = str(CONSTANTS.PATHS.ROOT / "stubs")
         os.chdir(CONSTANTS.PATHS.SOURCE)
         results = run([str(CONSTANTS.PATHS.SCRIPTS / "mypy"), "."], capture_output=True, text=True)
-        errors = ""
+        print()
         num_errors = 0
         for line in results.stdout.split("\n"):
+            print(line)
             if ": error: " in line:
-                errors += f"{line}\n"
                 num_errors += 1
-            elif ": note: " in line:
-                errors += f"{line}\n"
-        if num_errors:
-            errors += f"mypy found {num_errors} errors"
-            assert errors == ""
+        assert num_errors == 0, f"mypy found {num_errors} errors"
 
     def test_freewvs(self):
         """Check packages for vulnerabilities"""
-        results = run([executable, str(CONSTANTS.PATHS.SCRIPTS / "update-freewvsdb")])
-        assert results.returncode == 0
         os.chdir(CONSTANTS.PATHS.SOURCE)
-        results = run([executable, str(CONSTANTS.PATHS.SCRIPTS / "freewvs"), "."], capture_output=True, text=True)
-        if results.returncode:
-            assert results.stdout == ""
+        check_call([executable, str(CONSTANTS.PATHS.SCRIPTS / "update-freewvsdb")])
+        check_call([executable, str(CONSTANTS.PATHS.SCRIPTS / "freewvs"), "."])
 
 
 if __name__ == "__main__":

@@ -10,7 +10,7 @@ try:
     from robot_war.vm.source_module import Module
     from robot_war.vm.exec_context import Playground, SandBox
 except ImportError:
-    Module = Playground = SandBox = None
+    Module = Playground = SandBox = None  # type: ignore
 
 # Constants:
 LOG = logging.getLogger(__name__)
