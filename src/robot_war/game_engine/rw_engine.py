@@ -70,44 +70,8 @@ class RWEngine(GameEngine):
         self.sprites.draw(self.screen)
 
     def backend(self):
-        self.next_frame_time += CONSTANTS.TIMING.FRAMES
-        alive = False
-        while True:
-            if self.user_running:
-                for sandbox in self.playground.sandboxes:
-                    try:
-                        sandbox.step()
-                        alive = True
-                    except (RobotWarSystemExit, ReturnException):
-                        self.user_running = False
-
-            if (not alive) or (monotonic() > self.next_frame_time):
-                break
-
-        index = 0
-        while index < len(self.workers):
-            worker = self.workers[index]
-            try:
-                next(worker.generator)
-            except StopIteration as stop:
-                del self.workers[index]
-                worker.sandbox.playground.sandboxes.append(worker.sandbox)
-                worker.sandbox.push(stop.value)
-            else:
-                index += 1
-
-        if not alive:
-            self.clock.tick(CONSTANTS.TIMING.FRAME_RATE)
-
-    def block_generator(self, sandbox: SandBox, block_generator: BlockGenerator):
-        # Find the sandbox
-        for index, the_sandbox in enumerate(self.playground.sandboxes):
-            if sandbox is the_sandbox:
-                del self.playground.sandboxes[index]
-                self.workers.append(BlockGenerator(block_generator.generator, sandbox))
-                break
-        else:
-            raise KeyError("sandbox not found")
+        self.playground.step_all(CONSTANTS.TIMING.FRAMES)
+        self.clock.tick(CONSTANTS.TIMING.FRAME_RATE)
 
     def create_sprite(self, image: pygame.Surface, position: pygame.Vector2, facing: float) -> Sprite:
         return self.sprites.add(Sprite(image, pygame.Vector2(position), facing))

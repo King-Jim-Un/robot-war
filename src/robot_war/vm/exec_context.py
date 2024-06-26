@@ -1,6 +1,7 @@
 import logging
 from dataclasses import dataclass, field
 from pathlib import Path
+from time import monotonic
 from typing import List, Any, Dict, Optional, Union
 
 from robot_war.api import ROBOT_CLASSES, API_CLASSES
@@ -55,22 +56,8 @@ class Playground:
         return (f"Playground({str(self.root_path)}, {len(self.all_modules)} modules, {len(self.sandboxes)} sandboxes, "
                 f"{self.robot}")
 
-    def step_all(self):
-        index = 0
-        while index < len(self.sandboxes):
-            sandbox = self.sandboxes[index]
-            try:
-                sandbox.step()
-            except ReturnException:
-                del self.sandboxes[index]
-            except BlockGenerator as block_generator:
-                block_generator.sandbox = sandbox
-                del self.sandboxes[index]
-                self.workers.append(block_generator)
-            except BlockFunction:
-                del self.sandboxes[index]
-            else:
-                index += 1
+    def step_all(self, max_time: float = 0.0):
+        stop_after = monotonic() + max_time
 
         index = 0
         while index < len(self.workers):
@@ -83,6 +70,26 @@ class Playground:
                 self.sandboxes.append(worker.sandbox)
             else:
                 index += 1
+
+        while self.sandboxes:
+            index = 0
+            while index < len(self.sandboxes):
+                sandbox = self.sandboxes[index]
+                try:
+                    sandbox.step()
+                except ReturnException:
+                    del self.sandboxes[index]
+                except BlockGenerator as block_generator:
+                    block_generator.sandbox = sandbox
+                    del self.sandboxes[index]
+                    self.workers.append(block_generator)
+                except BlockFunction:
+                    del self.sandboxes[index]
+                else:
+                    index += 1
+
+            if monotonic() > stop_after:
+                break
 
     def new_sandbox(self, function: Function) -> "SandBox":
         sandbox = SandBox(self)
