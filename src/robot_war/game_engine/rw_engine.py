@@ -1,13 +1,11 @@
 from dataclasses import dataclass
 import logging
 import pygame
-from time import monotonic
 from typing import Optional, List
 
 from robot_war.constants import CONSTANTS
-from robot_war.exceptions import RobotWarSystemExit, BlockGenerator, ReturnException
+from robot_war.exceptions import BlockGenerator
 from robot_war.game_engine.base_game_engine import GameEngine
-from robot_war.game_engine.game_threads import BlockGenerator, ThreadBox
 from robot_war.game_engine.sprites import Sprite
 from robot_war.vm.api_class import ApiClass
 from robot_war.vm.exec_context import Playground, SandBox
@@ -57,7 +55,7 @@ class RWEngine(GameEngine):
         # Note that call_function doesn't block while the program runs. It loads a program into the VM and the execution
         # must be advanced by steps in backend()
         self.playground = ThreadGround(USER_SCRIPT, game_engine=self)
-        sandbox = ThreadBox(self.playground)
+        sandbox = SandBox(self.playground)
         self.playground.sandboxes = [sandbox]
         self.workers: List[BlockGenerator] = []
         module = Module("__main__")
