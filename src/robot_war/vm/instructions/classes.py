@@ -26,6 +26,7 @@ class LoadBuildClass(CodeLine):
 class LoadMethod(CodeLine):
     def exec(self, sandbox: SandBox):
         super().exec(sandbox)
+        assert self.note
         obj = sandbox.pop()
         try:
             sandbox.push(obj.get_method(self.note))
@@ -36,7 +37,10 @@ class LoadMethod(CodeLine):
 class LoadName(CodeLine):
     def exec(self, sandbox: SandBox):
         super().exec(sandbox)
-        sandbox.push(sandbox.context.get_name_obj.get_name(self.note))
+        assert self.note
+        get_name_obj = sandbox.context.get_name_obj
+        assert get_name_obj
+        sandbox.push(get_name_obj.get_name(self.note))
 
 
 class MakeFunction(CodeLine):
@@ -62,7 +66,9 @@ class MakeFunction(CodeLine):
 class SetupAnnotations(CodeLine):
     def exec(self, sandbox: SandBox):
         super().exec(sandbox)
-        sandbox.context.get_name_obj.name_dict["__annotations__"] = {}
+        get_name_obj = sandbox.context.get_name_obj
+        assert get_name_obj
+        get_name_obj.name_dict["__annotations__"] = {}
 
 
 class StoreAttribute(CodeLine):
@@ -76,4 +82,6 @@ class StoreAttribute(CodeLine):
 class StoreName(CodeLine):
     def exec(self, sandbox: SandBox):
         super().exec(sandbox)
-        sandbox.context.get_name_obj.name_dict[self.note] = sandbox.pop()
+        get_name_obj = sandbox.context.get_name_obj
+        assert get_name_obj and self.note
+        get_name_obj.name_dict[self.note] = sandbox.pop()

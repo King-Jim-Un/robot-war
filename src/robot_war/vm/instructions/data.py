@@ -103,6 +103,7 @@ class CompareOperand(CodeLine):
         super().exec(sandbox)
         arg2 = sandbox.pop()
         arg1 = sandbox.pop()
+        assert self.note
         sandbox.push(COMPARE_DICT[self.note](arg1, arg2))
 
 
@@ -121,7 +122,9 @@ class DeleteFast(CodeLine):
 class DeleteGlobal(CodeLine):
     def exec(self, sandbox: SandBox):
         super().exec(sandbox)
-        sandbox.context.function.code_block.module.del_name(self.note)
+        module = sandbox.context.function.code_block.module
+        assert module and self.note
+        module.del_name(self.note)
 
 
 class DeleteSubscript(CodeLine):
@@ -190,6 +193,7 @@ class LoadDeref(LoadClosure):
 class LoadConstant(CodeLine):
     def exec(self, sandbox: SandBox):
         super().exec(sandbox)
+        assert self.note
         constants = sandbox.context.function.code_block.constants
 
         # We don't preprocess the constants, just deal with them the first time they pop up. Have we done this one yet?
@@ -197,7 +201,9 @@ class LoadConstant(CodeLine):
             # Not yet. Is it a code block?
             if self.note.startswith("<"):
                 # Yes, grab the code
-                constants[self.operand] = sandbox.context.function.code_block.module.get_name(self.note)
+                module = sandbox.context.function.code_block.module
+                assert module
+                constants[self.operand] = module.get_name(self.note)
             else:
                 # Something simple, just eval it
                 from pathlib import WindowsPath  # noqa Should allow us to eval a constant path
@@ -215,8 +221,9 @@ class LoadFast(CodeLine):
 class LoadGlobal(CodeLine):
     def exec(self, sandbox: SandBox):
         super().exec(sandbox)
-        name_dict = sandbox.context.function.code_block.module.name_dict
-        sandbox.push(name_dict[self.note])
+        module = sandbox.context.function.code_block.module
+        assert module and self.note
+        sandbox.push(module.name_dict[self.note])
 
 
 class LoadSubscript(CodeLine):
@@ -267,7 +274,9 @@ class StoreFast(CodeLine):
 class StoreGlobal(CodeLine):
     def exec(self, sandbox: SandBox):
         super().exec(sandbox)
-        sandbox.context.function.code_block.module.set_name(self.note, sandbox.pop())
+        module = sandbox.context.function.code_block.module
+        assert module and self.note
+        module.set_name(self.note, sandbox.pop())
 
 
 class StoreSubscript(CodeLine):

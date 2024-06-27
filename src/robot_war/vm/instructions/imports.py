@@ -70,6 +70,7 @@ class ImportFrom(CodeLine):
     def exec(self, sandbox: SandBox):
         super().exec(sandbox)
         module: Module = sandbox.peek(-1)
+        assert self.note
         sandbox.push(module.get_name(self.note))
 
 
@@ -83,6 +84,7 @@ class ImportName(CodeLine):
         # 0: from x import y
         # 1: from .x import y
         # 2: from ..x import y
+        assert self.note is not None
         parts: List[str] = self.note.split(".")
         # ["x", "y", "z"]: import x.y.z
 
@@ -170,7 +172,7 @@ class ImportName(CodeLine):
                 modules_loaded = []
                 tuples_to_load = []
                 for name in from_list:
-                    loaded, to_load = ImportName.find_files(sandbox, [name], from_dot_path, start_dir, [])
+                    loaded, to_load = ImportName.find_files(sandbox, [name], from_dot_path, start_dir, None)
                     modules_loaded += loaded
                     tuples_to_load += to_load
                 return modules_loaded, tuples_to_load
@@ -224,6 +226,9 @@ class ImportName(CodeLine):
         #     )
 
         current_module = sandbox.context.function.code_block.module
+        assert current_module
+        file_path = current_module.path
+        assert isinstance(file_path, Path)
 
         # Are we searching in the dark?
         if level == 0:
@@ -244,28 +249,28 @@ class ImportName(CodeLine):
             # We can't find it from the root, so let's do some relative searching.
 
             # Is the current module a package?
-            if current_module.path.name == "__init__.py":
+            if file_path.name == "__init__.py":
                 # Yes, so search from here
                 mod_path = ".".join(current_module.dot_path + parts)
                 return ImportName.find_files(
-                    sandbox, parts, current_module.dot_path, current_module.path.parent, from_list) + (mod_path,)
+                    sandbox, parts, current_module.dot_path, file_path.parent, from_list) + (mod_path,)
 
             # The current module is a regular file, so search for a sibling
             mod_path = ".".join(current_module.dot_path[:-1] + parts)
             return ImportName.find_files(
-                sandbox, parts, current_module.dot_path[:-1], current_module.path.parent, from_list) + (mod_path,)
+                sandbox, parts, current_module.dot_path[:-1], file_path.parent, from_list) + (mod_path,)
 
         else:
             # We know this is a relative import, but is the current module a package?
-            if current_module.path.name == "__init__.py":
+            if file_path.name == "__init__.py":
                 # Yes, relative means a child of this module
                 dot_path = current_module.dot_path if level == 1 else current_module.dot_path[:1 - level]
             else:
                 # No, relative means a sibling of this module
                 dot_path = current_module.dot_path[:-level]
             mod_path = ".".join(dot_path + parts)
-            path = current_module.path.parents[level - 1]
-            return ImportName.find_files(sandbox, parts, dot_path, path, from_list) + (mod_path,)
+            return ImportName.find_files(
+                sandbox, parts, dot_path, file_path.parents[level - 1], from_list) + (mod_path,)
 
 
 class ImportStar(CodeLine):
@@ -278,6 +283,7 @@ class ImportStar(CodeLine):
         from robot_war.vm.source_module import Module
         import_from: Module = sandbox.pop()
         import_to = sandbox.context.function.code_block.module
+        assert import_to
         for name, value in import_from.name_dict.items():
             if name[0] not in ["<", "-"]:
                 import_to.set_name(name, value)
@@ -330,4 +336,5 @@ class LoadModuleFile2(CodeLine):
 class LoadModuleFile3(CodeLine):
     def exec(self, sandbox: SandBox):
         super().exec(sandbox)
+        assert self.note
         sandbox.push(sandbox.playground.all_modules[self.note])

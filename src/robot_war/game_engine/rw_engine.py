@@ -40,6 +40,7 @@ class ThreadGround(Playground):
 
     def set_robot(self, robot: ApiClass):
         super().set_robot(robot)
+        assert self.game_engine
         sprite = RobotSprite(self.game_engine.robot_image, robot)
         self.game_engine.sprites.add(sprite)
 
@@ -57,7 +58,7 @@ class RWEngine(GameEngine):
         self.playground = ThreadGround(USER_SCRIPT, game_engine=self)
         sandbox = SandBox(self.playground)
         self.playground.sandboxes = [sandbox]
-        self.workers: List[BlockGenerator] = []
+        self.workers: List[BlockGenerator] = []  # type: ignore[annotation-unchecked]
         module = Module("__main__")
         # TODO: Check if there's an __init__.py first? Not sure if that's right. Should test.
         sandbox.call_function(module.read_source_file(USER_SCRIPT))
