@@ -65,6 +65,7 @@ class Playground:
             try:
                 next(worker.generator)
             except StopIteration as stop:
+                assert worker.sandbox
                 worker.sandbox.push(stop.value)
                 del self.workers[index]
                 self.sandboxes.append(worker.sandbox)

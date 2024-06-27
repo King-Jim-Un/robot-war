@@ -16,7 +16,7 @@ class CodeLine:
     line_number: Optional[int]
     offset: int
     op_code: str
-    operand: Optional[int]
+    operand: int
     note: Optional[str]
 
     def __repr__(self):

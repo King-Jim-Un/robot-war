@@ -27,10 +27,11 @@ class Thread(ApiClass, SourceInstance):
 
     @requires_sandbox
     def join(self, sandbox: Optional[SandBox] = None):
+        assert sandbox
         return self._waiter.get_value(sandbox)
 
     def start(self, function: "Function", *args, **kwargs) -> "Thread":
-        assert not self._running
+        assert self._playground and not self._running
         self._running = True
 
         arguments = {"_set_value": self._waiter.set_value, "_func": function}

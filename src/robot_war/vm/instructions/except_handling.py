@@ -179,6 +179,7 @@ class SetupWith(CodeLine):
 class WithExceptStart(CodeLine):
     def exec(self, sandbox: SandBox):
         super().exec(sandbox)
-        instance = sandbox.context.try_stack[-1].instance
-        sandbox.push(instance)
-        sandbox.call_function(instance.get_name("__exit__"), sandbox.peek(-1), sandbox.peek(-2), sandbox.peek(-3))
+        try_offset = sandbox.context.try_stack[-1]
+        assert isinstance(try_offset, WithOffset)
+        sandbox.push(try_offset.instance)
+        sandbox.call_function(try_offset.instance.get_name("__exit__"), sandbox.peek(-1), sandbox.peek(-2), sandbox.peek(-3))

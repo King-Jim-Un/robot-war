@@ -25,7 +25,7 @@ LOG = logging.getLogger(__name__)
 
 @dataclass
 class SourceClass(GetName):
-    parent_classes: List["SourceClass"] = ()
+    parent_classes: List["SourceClass"] = field(default_factory=list)
     module: Optional[Module] = None
 
     def get_name(self, name: str):
@@ -75,6 +75,7 @@ class SourceInstance(GetName):
         return attr if callable(attr) else BoundMethod(instance=self, **attr.__dict__)
 
     def get_name(self, name: str):
+        assert self.source_class
         return self.name_dict[name] if name in self.name_dict else self.source_class.get_name(name)
 
 

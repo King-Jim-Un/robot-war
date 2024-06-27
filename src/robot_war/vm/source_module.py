@@ -50,14 +50,14 @@ class Module(GetName, Function):
         with path.open("rt") as file_obj:
             return self.add_source_code(file_obj.read())
 
-    def add_code(self, code: CODE_CLASS) -> Function:
+    def add_code(self, code: CODE_CLASS) -> Function:  # type: ignore[valid-type]
         from robot_war.vm.instructions.op_code_dict import OP_CODE_CLASSES
 
         # Code block
         code_block = CodeBlock(module=self)
         for instr in get_instructions(code):
             line_class = OP_CODE_CLASSES[instr.opname]
-            instr_obj = line_class(instr.starts_line, instr.offset, instr.opname, instr.arg, instr.argrepr)
+            instr_obj = line_class(instr.starts_line, instr.offset, instr.opname, instr.arg or 0, instr.argrepr)
             code_block.code_lines[instr.offset] = instr_obj
         self.set_name(str(code), code_block)  # save code block
 
@@ -78,8 +78,8 @@ class Module(GetName, Function):
             code_block.param_names = [var_name_dict[index] for index in range(code_block.num_params)]
 
         # Grab other code blocks
-        for constant in code.co_consts:
+        for constant in code.co_consts:  # type: ignore[attr-defined]
             if isinstance(constant, CODE_CLASS):
                 self.add_code(constant)
 
-        return Function(code.co_name, code_block.param_names, code_block)
+        return Function(code.co_name, code_block.param_names, code_block)  # type: ignore[attr-defined]

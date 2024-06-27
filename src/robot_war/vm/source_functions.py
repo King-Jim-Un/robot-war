@@ -68,7 +68,7 @@ class FastMember:
     function: "Function"
     name: str
 
-    def __call__(self, fast: str = None, label: Optional[str] = None) -> int:
+    def __call__(self, fast: str, label: Optional[str] = None) -> int:
         from robot_war.vm.exec_context import CODE_STEP
         from robot_war.vm.instructions.op_code_dict import OP_CODE_CLASSES
         code_lines = self.function.code_block.code_lines
@@ -88,7 +88,7 @@ class NoteMember:
     function: "Function"
     name: str
 
-    def __call__(self, note: str = None, label: Optional[str] = None) -> int:
+    def __call__(self, note: str, label: Optional[str] = None) -> int:
         from robot_war.vm.exec_context import CODE_STEP
         from robot_war.vm.instructions.op_code_dict import OP_CODE_CLASSES
         code_lines = self.function.code_block.code_lines
@@ -106,7 +106,7 @@ class RelativeMember:
     function: "Function"
     name: str
 
-    def __call__(self, target: str = None, label: Optional[str] = None, offset: Optional[int] = None) -> int:
+    def __call__(self, target: str, label: Optional[str] = None, offset: Optional[int] = None) -> int:
         from robot_war.vm.exec_context import CODE_STEP
         from robot_war.vm.instructions.op_code_dict import OP_CODE_CLASSES
         code_lines = self.function.code_block.code_lines
@@ -199,6 +199,6 @@ class Function:
         from robot_war.vm.exec_context import FunctionContext
         return FunctionContext(self, {index: arg for index, arg in enumerate(args)}, source_class)
 
-    def call_in_sandbox(self, sandbox: "Sandbox"):
+    def call_in_sandbox(self, sandbox: "SandBox"):
         self.arg_names = list(self.arguments.keys())
         sandbox.call_function(self, *tuple(self.arguments.values()))
